@@ -1,0 +1,238 @@
+{
+  "coreExpectations": [
+    {
+      "capability": "Free core logging without paywalls",
+      "description": "Users expect to log products, build routines, and track progress without hitting a subscription wall. Across all 10 competitors, paywall frustration is the single most cited complaint — from Charm's misleading free trial to Skan locking everything behind payment. Users explicitly state they want to trust an app before paying for it.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Flexible recurring routine scheduling",
+      "description": "Users managing actives like retinol, AHAs, and microneedling need cycle-based scheduling beyond AM/PM toggles. FeelinMySkin users paid $30 only to discover they couldn't schedule a routine every 4 weeks. Charm users couldn't track which days to use retinol vs AHA/BHA. This is a table-stakes gap across the entire competitor field.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Build routines from products already owned",
+      "description": "Multiple competitors — Skin Bliss and FeelinMySkin explicitly — advertise this feature but fail to deliver it. Users report feeling deceived. The expectation is clear: start from your shelf, not from a preset database or skin profile quiz that may be inaccurate.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Comprehensive and expandable product database",
+      "description": "Users across Skincare Routine, SkinSort, Stilla, and Routinely all cite missing brands as a dealbreaker. The expectation is barcode scanning plus manual entry as a fallback so no user is ever blocked. Community-contributed data with moderation is an acceptable supplement.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Ingredient conflict detection and layering guidance",
+      "description": "Users want to know if their products fight each other and in what order to apply them. Skincare Routine earns praise specifically for this. Skin Bliss users value cross-checking ingredients. This is a high-demand feature that users now consider standard in any serious skincare app.",
+      "importance": "high"
+    },
+    {
+      "capability": "Reliable streak and calendar tracking",
+      "description": "Skincare Routine Planner users report streak counters resetting unexpectedly, destroying motivation. BasicBeauty users love streak mechanics but lose data due to bugs. Users expect a dependable calendar view showing product usage history per day with no data loss.",
+      "importance": "high"
+    },
+    {
+      "capability": "Progress photo timeline with comparison",
+      "description": "Users across BasicBeauty, Skin Bliss, and FeelinMySkin cite photo journaling as a core motivator. The expectation includes a side-by-side comparison slider, tagging with skin conditions, and private storage — not facial data harvesting as users report fearing with Skan.",
+      "importance": "high"
+    },
+    {
+      "capability": "Privacy-respecting skin analysis",
+      "description": "Users report serious concerns about Skan collecting and potentially selling facial data. The expectation is that any skin insights come from user-logged data, not invasive facial scanning. Transparency about data use is now a baseline trust requirement.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Timezone-aware reminders",
+      "description": "Skincare Routine Planner users report app malfunction when traveling due to timezone issues. Users with active travel lifestyles expect reminders to follow them accurately across timezones without breaking their streak or routine schedule.",
+      "importance": "medium"
+    },
+    {
+      "capability": "Honest and transparent monetization",
+      "description": "Users across Charm, BasicBeauty, Skan, and Stilla express anger at misleading free trials, unexpected charges, and subscription prompts on every screen. The expectation is upfront pricing disclosure, a genuinely usable free tier, and no billing surprises.",
+      "importance": "critical"
+    }
+  ],
+  "aiEnhancements": [
+    {
+      "painPoint": "Inaccurate skin analysis from facial scanning (Skan, Routinely) that crashes, rejects photos, or produces meaningless results",
+      "aiSolution": "Replace invasive facial scanning with a lightweight AI correlation engine that analyzes user-logged data — skin condition entries, products used, routine consistency, and environmental inputs like UV index and humidity — to surface patterns over time without requiring a single photo of the user's face",
+      "expectedImpact": "Eliminates privacy risk and app crash frustration entirely while delivering more personalized and trustworthy insights, since the AI is working from the user's own verified data rather than a one-time photo scan that may be rejected or misread"
+    },
+    {
+      "painPoint": "Ingredient conflict detection that is confusing, inaccurate, or absent across most competitors (Charm, BasicBeauty, Skin Bliss, Skincare Routine Planner)",
+      "aiSolution": "AI-powered ingredient parsing that automatically identifies conflicts and synergies when products are added to a routine, explains them in plain language, and suggests optimal application order based on product type, pH, and active ingredient concentration",
+      "expectedImpact": "Reduces user anxiety around active ingredient combinations, prevents skin damage from incompatible layering, and positions GlowLog as the most ingredient-intelligent free app in the category — directly addressing the gap that Skincare Routine earns its best reviews for"
+    },
+    {
+      "painPoint": "Product recommendations that don't match user preferences or skin concerns (Skin Bliss recommending wrong products, SkinSort showing 0% match on best products)",
+      "aiSolution": "AI recommendation engine trained on user-logged outcomes — products that correlated with improved skin conditions get surfaced as suggestions, while products linked to breakouts or irritation are flagged — making recommendations earned through the user's own skin story rather than generic profile matching",
+      "expectedImpact": "Dramatically higher recommendation trust and relevance, reducing the frustration Skin Bliss users report when the app insists their freckles are blemishes and recommends entirely wrong product categories"
+    },
+    {
+      "painPoint": "Manual product entry is time-consuming and error-prone (Skin Bliss, Skincare Routine, SkinSort)",
+      "aiSolution": "AI-assisted barcode scanning that auto-populates product name, brand, and full ingredient list from open databases, with a community correction layer where AI flags likely errors in user-submitted ingredient data for moderation review",
+      "expectedImpact": "Reduces product entry time from minutes to seconds, eliminates the frustration of being the one doing all the work as Skin Bliss users describe, and builds a self-improving database that gets more comprehensive over time"
+    },
+    {
+      "painPoint": "Routine scheduling that cannot handle recurring cycles for actives like retinol, AHA/BHA, or microneedling (FeelinMySkin, Charm, BasicBeauty)",
+      "aiSolution": "AI-suggested scheduling that detects active ingredients in a user's product shelf and proactively recommends appropriate cycle intervals — for example, suggesting retinol every 3 days for beginners or flagging that AHA and retinol should not be scheduled on the same night — with smart conflict resolution when cycles overlap",
+      "expectedImpact": "Solves the exact pain point that caused a FeelinMySkin user to waste $30 and continue searching for a functioning skincare app, turning GlowLog into the only app that actively helps users schedule actives safely"
+    },
+    {
+      "painPoint": "Streak resets and data loss destroying user motivation (Skincare Routine Planner, BasicBeauty)",
+      "aiSolution": "AI-powered streak recovery that distinguishes between intentional skips and accidental misses, offers grace period logic for travel or illness, and sends contextual nudges based on the user's historical routine consistency patterns rather than generic daily reminders",
+      "expectedImpact": "Preserves the dopamine-driven motivation that BasicBeauty users love about streak mechanics while eliminating the demotivating crashes that cause users to abandon the app entirely"
+    }
+  ],
+  "featurePriorities": [
+    {
+      "feature": "Honest Freemium — No Paywall on Core Logging",
+      "impact": "critical",
+      "feasibility": "high",
+      "aiIntegration": "AI is not required for the free tier itself, but AI-powered analytics and correlation insights serve as the compelling premium upgrade path — making the freemium model sustainable without locking basic functionality"
+    },
+    {
+      "feature": "Flexible Recurring Routine Scheduler with Timezone Awareness",
+      "impact": "critical",
+      "feasibility": "high",
+      "aiIntegration": "AI detects active ingredients in scheduled routines and suggests safe cycle intervals, flags scheduling conflicts between incompatible actives on the same day, and adjusts reminder timing intelligently when timezone changes are detected"
+    },
+    {
+      "feature": "Build Routines From Products You Own",
+      "impact": "critical",
+      "feasibility": "high",
+      "aiIntegration": "AI suggests optimal layering order based on product type, pH level, and ingredient category as soon as products are added to a routine, removing the need for users to research application order manually"
+    },
+    {
+      "feature": "Skin Story Correlation Engine",
+      "impact": "critical",
+      "feasibility": "medium",
+      "aiIntegration": "Core AI feature — lightweight machine learning correlates logged skin conditions with products used, routine consistency rates, and environmental data to surface statistically meaningful patterns visualized as weekly and monthly charts"
+    },
+    {
+      "feature": "Universal Product Entry With Barcode Scan",
+      "impact": "high",
+      "feasibility": "high",
+      "aiIntegration": "AI auto-populates ingredient lists from barcode scans using open ingredient databases, flags likely data errors in community submissions, and suggests product category classification to enable accurate layering recommendations"
+    },
+    {
+      "feature": "Ingredient Conflict and Layering Guide",
+      "impact": "high",
+      "feasibility": "high",
+      "aiIntegration": "AI parses full ingredient lists to identify known conflicts and synergies, ranks application order by pH and molecular weight, and explains findings in plain language calibrated to the user's self-reported skincare experience level"
+    },
+    {
+      "feature": "Calendar View and Product Usage History",
+      "impact": "high",
+      "feasibility": "high",
+      "aiIntegration": "AI identifies usage pattern anomalies — for example, flagging that a breakout cluster on the calendar correlates with days a new product was introduced — and surfaces these observations proactively in the Skin Story feed"
+    },
+    {
+      "feature": "Custom Photo Progress Timeline",
+      "impact": "high",
+      "feasibility": "medium",
+      "aiIntegration": "AI tags photos with detected skin condition metadata based on user-entered notes rather than facial scanning, enabling searchable photo history by condition, product, or routine — all without processing biometric facial data"
+    },
+    {
+      "feature": "Expiration Date Alerts and Product Rotation Tracking",
+      "impact": "medium",
+      "feasibility": "high",
+      "aiIntegration": "AI predicts expiration dates based on PAO symbols entered during product setup and usage frequency logged in the calendar, sending alerts before products expire rather than after"
+    },
+    {
+      "feature": "Beginner Ingredient Education Layer",
+      "impact": "medium",
+      "feasibility": "medium",
+      "aiIntegration": "AI adapts ingredient explanations to the user's experience level — simplified plain-language summaries for beginners, full INCI breakdowns for enthusiasts — based on onboarding profile and in-app behavior signals"
+    }
+  ],
+  "uxVision": {
+    "overallExperience": "GlowLog should feel like a trusted skincare journal kept by a knowledgeable friend — calm, organized, and honest. Where competitors feel like they are constantly trying to extract money or data from the user, GlowLog should feel like it is genuinely on the user's side. Every screen should communicate transparency: no hidden costs, no mysterious AI black boxes, no data anxiety. The experience should reward consistency without punishing imperfection, making users feel informed and empowered rather than surveilled or upsold.",
+    "keyDifferences": [
+      "Unlike Skan and Routinely which gate everything behind facial scanning and paywalls, GlowLog delivers its first moment of value — a logged product with ingredient insights — within 60 seconds of opening the app for the first time, with no subscription prompt in sight",
+      "Unlike Skin Bliss and FeelinMySkin which advertise routine building from your own products but fail to deliver it, GlowLog makes the shelf-first routine builder the literal first action in onboarding — users see their own products before they see any database suggestions",
+      "Unlike SkinSort which bombards even paying subscribers with notifications and upsell prompts according to user reviews, GlowLog surfaces premium features contextually and only once — when the user has already experienced the free value and is naturally ready to want more",
+      "Unlike BasicBeauty and Skincare Routine Planner where streak resets destroy motivation, GlowLog treats consistency as a journey with grace periods and recovery logic, celebrating progress over perfection",
+      "Unlike Charm and Stilla which switched from free to paywalled models and lost user trust permanently, GlowLog publishes its pricing on the App Store listing and in the first onboarding screen — building trust before the user has even logged their first product",
+      "The Skin Story correlation engine is visualized as a personal narrative — your skin over time — rather than a clinical dashboard, making data feel meaningful and motivating rather than overwhelming or judgmental"
+    ],
+    "emotionalTone": "Confident, calm, and trustworthy — like a skincare-obsessed friend who actually knows their ingredients and never tries to sell you something you don't need. Users should feel in control of their data, proud of their consistency, and genuinely curious about what their skin story will reveal next."
+  },
+  "unmetNeeds": [
+    {
+      "need": "Proactive active ingredient scheduling safety net",
+      "description": "No competitor currently warns users when their scheduled routine creates a dangerous combination of actives on the same day or consecutive days — for example, retinol the night before a chemical exfoliant. Users managing complex routines with AHAs, BHAs, retinoids, and vitamin C are essentially scheduling blind, and the market has not addressed this gap with proactive AI-driven conflict prevention at the scheduling layer rather than just the product-adding layer."
+    },
+    {
+      "need": "Environmental skin trigger correlation",
+      "description": "Users have no way to connect external factors — UV index spikes, seasonal humidity drops, air quality changes — to their skin condition fluctuations. Competitors track products but ignore environment entirely. A user who always breaks out in winter or flares in high-humidity months has no tool to confirm or disprove that pattern from their own logged data."
+    },
+    {
+      "need": "Routine effectiveness scoring over time",
+      "description": "Users want to know if their current routine is actually working, not just whether they completed it. No competitor surfaces a signal like your skin condition scores have improved 23% over the past 6 weeks on your current routine — giving users objective evidence to keep going or to experiment with changes. This is the difference between a checklist app and a genuine skin intelligence tool."
+    },
+    {
+      "need": "Ingredient learning progression for beginners",
+      "description": "Skincare beginners feel overwhelmed by conflicting advice about ingredient layering, actives, and compatibility. No competitor adapts its ingredient education to the user's experience level — everyone gets the same INCI data dump. A beginner-to-enthusiast learning path that unlocks deeper ingredient knowledge as the user's logged history grows would address a latent need that no current app serves."
+    },
+    {
+      "need": "Cross-routine conflict detection for multi-routine users",
+      "description": "Users managing separate AM, PM, and weekly active routines have no way to see whether products across different routines conflict with each other. A retinol in the PM routine and a vitamin C in the AM routine may interact poorly if used on consecutive days, but no competitor analyzes conflicts across routine boundaries — only within a single routine at the time of product addition."
+    },
+    {
+      "need": "Honest product efficacy community signal",
+      "description": "Users want to know whether a product actually worked for people with similar skin concerns — not a generic star rating, but a signal tied to logged skin outcomes. No competitor connects community usage data to measurable skin condition improvements in a privacy-respecting way. An aggregated, anonymized efficacy signal based on real logged outcomes would be a genuinely novel trust layer."
+    }
+  ],
+  "antiPatterns": [
+    {
+      "pattern": "Paywall on core logging, routine building, or ingredient checking",
+      "type": "avoid",
+      "reasoning": "This is the single most cited reason users abandon or one-star every competitor in the field — from Charm and Skan to Stilla and BasicBeauty. Users across all 10 competitors explicitly state they will not pay for an app they cannot first trust through free use. Monetizing core functionality destroys the trust loop before it can form."
+    },
+    {
+      "pattern": "Misleading free trial that converts to subscription without clear upfront disclosure",
+      "type": "avoid",
+      "reasoning": "Charm users report being charged $25 without agreeing to anything and having no way to contact support. This pattern generates the most emotionally charged negative reviews in the dataset and creates lasting brand damage. GlowLog must display pricing on the App Store listing and in the first onboarding screen."
+    },
+    {
+      "pattern": "Streak mechanics with motivational dopamine hooks",
+      "type": "preserve",
+      "reasoning": "BasicBeauty users explicitly credit streak mechanics with keeping them consistent — one reviewer describes it as ADHD-proof. The problem is not streaks themselves but unreliable streak tracking that resets unexpectedly. GlowLog should preserve streak motivation while adding grace period logic and reliable data persistence."
+    },
+    {
+      "pattern": "Facial scanning as the primary skin analysis mechanism",
+      "type": "avoid",
+      "reasoning": "Users report that Skan's facial scanning is both privacy-invasive — with some users claiming in reviews that facial data is sold, though this is unverified — and technically unreliable, with Routinely's photo analysis crashing or rejecting photos entirely. Facial scanning creates privacy anxiety and technical failure points that undermine trust at the exact moment users are most vulnerable."
+    },
+    {
+      "pattern": "Ingredient conflict detection and plain-language explanations",
+      "type": "preserve",
+      "reasoning": "Skincare Routine earns its strongest positive reviews specifically for ingredient conflict detection and layering suggestions. Skin Bliss users value cross-checking ingredients as a core reason to use the app. This feature drives genuine loyalty and is worth investing in deeply — it is the feature users most associate with an app that actually knows skincare."
+    },
+    {
+      "pattern": "Aggressive subscription prompts and upsell notifications sent to existing paying subscribers",
+      "type": "avoid",
+      "reasoning": "SkinSort users who are already subscribed report receiving ads and notifications pushing them to engage more with the app. This pattern signals that the app prioritizes extraction over user experience and generates resentment even among paying customers. GlowLog should surface premium features contextually and never interrupt a logged session with a monetization prompt."
+    },
+    {
+      "pattern": "Clean, organized layout with intuitive routine setup",
+      "type": "preserve",
+      "reasoning": "Skincare Routine Planner, BasicBeauty, and SkinSort all earn consistent praise for clean interfaces and easy routine setup despite their other flaws. Users in this category are managing complex multi-product routines and need clarity above all else. Visual clutter is a trust signal — a messy app feels like it cannot be trusted with your skin data."
+    },
+    {
+      "pattern": "Community features and responsive developer communication",
+      "type": "preserve",
+      "reasoning": "FeelinMySkin earns loyalty specifically through community features and developer responsiveness despite its paywall frustrations. Skincare Routine Planner users cite good developer responsiveness as a reason to stay. In a category where users feel ignored by support teams — as Skin Bliss users report waiting a year for product verification — responsive communication is a meaningful differentiator."
+    },
+    {
+      "pattern": "Inaccurate AI skin profile matching that overrides user knowledge of their own skin",
+      "type": "avoid",
+      "reasoning": "Skin Bliss users report the app insisting their freckles are blemishes and blocking them from adding products they know work for them. This pattern — where AI authority overrides user agency — is deeply frustrating and paternalistic. GlowLog's AI should always inform and suggest, never block or override user choices about their own skin."
+    },
+    {
+      "pattern": "Progress photo tracking with tagging and comparison slider",
+      "type": "preserve",
+      "reasoning": "Progress photos are cited as a core motivator across BasicBeauty, FeelinMySkin, and Skin Bliss. The comparison slider specifically is mentioned as a desired feature. When implemented with local or private cloud storage and no facial data processing, photo journaling drives long-term retention and gives users tangible evidence that their routine is working."
+    }
+  ]
+}

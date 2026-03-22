@@ -1,8 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { scoreColor, sentimentColors } from "@/lib/ui-constants";
 import type { Opportunity } from "@/lib/types";
 
 interface OpportunityCardProps {
@@ -10,35 +9,26 @@ interface OpportunityCardProps {
   onSelect?: (opportunity: Opportunity) => void;
 }
 
-function ScoreBar({ value, label }: { value: number; label: string }) {
-  const color =
-    value >= 70
-      ? "bg-green-500"
-      : value >= 40
-        ? "bg-yellow-500"
-        : "bg-red-500";
+const sentimentLabel: Record<string, string> = {
+  positive: "Positive",
+  mixed: "Mixed",
+  negative: "Negative",
+};
 
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="w-24 text-muted-foreground shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${color}`}
-          style={{ width: `${value}%` }}
-        />
-      </div>
-      <span className="w-8 text-right font-medium">{value}</span>
-    </div>
-  );
-}
+const sentimentDotColor: Record<string, string> = {
+  positive: "bg-green-500",
+  mixed: "bg-yellow-500",
+  negative: "bg-red-500",
+};
 
 export function OpportunityCard({ opportunity, onSelect }: OpportunityCardProps) {
   const { scrapedApp, sentiment, score } = opportunity;
-  const topPainPoints = sentiment.painPoints.slice(0, 2);
 
   return (
     <Card
-      className="flex flex-col cursor-pointer transition-shadow hover:shadow-md"
+      className={`flex flex-col cursor-pointer transition-shadow hover:shadow-md rounded-xl border bg-surface-0 border-l-4 ${
+        score.compositeScore >= 70 ? "border-l-green-500" : score.compositeScore >= 40 ? "border-l-yellow-500" : "border-l-red-500"
+      }`}
       onClick={() => onSelect?.(opportunity)}
     >
       <CardHeader className="pb-0">
@@ -62,60 +52,62 @@ export function OpportunityCard({ opportunity, onSelect }: OpportunityCardProps)
               {scrapedApp.developer}
             </p>
           </div>
+          {/* Prominent composite score */}
+          <div
+            className="flex items-center justify-center size-10 rounded-full shrink-0 text-white text-2xl font-bold"
+            style={{ backgroundColor: scoreColor(score.compositeScore) }}
+          >
+            <span className="text-sm font-bold">{score.compositeScore}</span>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="flex-1 space-y-3 pt-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-[11px]">
             {scrapedApp.store === "google_play" ? "Google Play" : "App Store"}
           </Badge>
-          <Badge variant="secondary" className="text-[10px]">
+          <Badge variant="secondary" className="text-[11px]">
             {scrapedApp.genre}
           </Badge>
         </div>
 
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span>
-            Rating: <span className="text-foreground font-medium">{scrapedApp.score.toFixed(1)}</span>
-          </span>
-          <span>
-            Installs: <span className="text-foreground font-medium">{scrapedApp.installs}{scrapedApp.installs.startsWith("~") ? " (est.)" : ""}</span>
-          </span>
+          {scrapedApp.score > 0 && (
+            <span>
+              Rating: <span className="text-foreground font-medium">{scrapedApp.score.toFixed(1)}</span>
+            </span>
+          )}
+          {scrapedApp.reviewCount != null && scrapedApp.reviewCount > 0 && (
+            <span>
+              Reviews: <span className="text-foreground font-medium">{scrapedApp.reviewCount.toLocaleString()}</span>
+            </span>
+          )}
+          {scrapedApp.ratings > 0 && (
+            <span className="opacity-60" title="Total star ratings (includes silent tap-to-rate)">
+              Ratings: <span className="text-foreground font-medium">{scrapedApp.ratings.toLocaleString()}</span>
+            </span>
+          )}
+          {scrapedApp.installs && scrapedApp.installs !== "N/A" && (
+            <span className={scrapedApp.isEstimatedInstalls ? "opacity-60" : ""}>
+              Installs: <span className="text-foreground font-medium">{scrapedApp.installs}{scrapedApp.isEstimatedInstalls ? " (est.)" : ""}</span>
+            </span>
+          )}
         </div>
 
-        <div className="space-y-1.5">
-          <ScoreBar value={score.composite} label="Composite" />
-          <ScoreBar value={score.marketSize} label="Market Size" />
-          <ScoreBar value={score.dissatisfaction} label="Dissatisfaction" />
-          <ScoreBar value={score.feasibility} label="Feasibility" />
-        </div>
+        {/* Compact score row */}
+        <p className="text-xs text-muted-foreground">
+          M: {score.marketSize} | G: {score.featureGapScore} | F: {score.feasibility}
+        </p>
 
-        {topPainPoints.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {topPainPoints.map((pp, i) => (
-              <Badge
-                key={i}
-                variant="destructive"
-                className="text-[10px] font-normal"
-              >
-                {pp.issue}
-              </Badge>
-            ))}
-          </div>
-        )}
+        {/* Sentiment indicator */}
+        <div className="flex items-center gap-1.5">
+          <div className={`size-2.5 rounded-full shrink-0 ${sentimentDotColor[sentiment.overallSentiment] ?? "bg-gray-400"}`} />
+          <span className={`text-xs font-medium ${(sentimentColors[sentiment.overallSentiment] ?? "").split(" ").find(c => c.startsWith("text-")) ?? "text-muted-foreground"}`}>
+            {sentimentLabel[sentiment.overallSentiment] ?? sentiment.overallSentiment}
+          </span>
+        </div>
       </CardContent>
-
-      <CardFooter>
-        <Button
-          asChild
-          size="sm"
-          className="w-full"
-          onClick={(e: React.MouseEvent) => e.stopPropagation()}
-        >
-          <Link href={`/architect?id=${opportunity.id}`}>Analyze</Link>
-        </Button>
-      </CardFooter>
     </Card>
   );
 }

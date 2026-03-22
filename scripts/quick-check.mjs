@@ -1,0 +1,11 @@
+import 'dotenv/config';
+import postgres from 'postgres';
+const sql = postgres(process.env.DATABASE_URL, { prepare: false, connect_timeout: 15 });
+const analysisId = '6ce4df9e-e66e-4a59-a7f2-a4339c5f19d0';
+const [a] = await sql`SELECT status FROM analyses WHERE id = ${analysisId}`;
+const docs = await sql`SELECT id, type FROM documents WHERE analysis_id = ${analysisId}`;
+const eps = await sql`SELECT id, prompt_number FROM execution_prompts WHERE analysis_id = ${analysisId}`;
+console.log('Status:', a.status, '| Docs:', docs.length, '| EPs:', eps.length);
+if (docs.length > 0) console.log('Doc types:', docs.map(d => d.type).join(', '));
+if (eps.length > 0) console.log('EP numbers:', eps.map(e => e.prompt_number).join(', '));
+await sql.end();

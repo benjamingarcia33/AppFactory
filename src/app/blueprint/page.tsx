@@ -2,9 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,16 +10,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VisualStrategy } from "@/components/architect/visual-strategy";
-import { StarterPayloadViewer } from "@/components/architect/starter-payload-viewer";
+import { DocumentViewer } from "@/components/architect/document-viewer";
+import { ExecutionPromptViewer } from "@/components/architect/execution-prompt-viewer";
+import { IdeaChatInput } from "@/components/architect/idea-chat-input";
+import { ImpactAnalysisCard } from "@/components/architect/impact-analysis-card";
+import { IncrementalEPViewer } from "@/components/architect/incremental-ep-viewer";
+import { IdeaEvolutionHistory } from "@/components/architect/idea-evolution-history";
+import { normalizeVisualStrategy } from "@/components/architect/document-tabs";
+import { useIdeaEvolution } from "@/hooks/useIdeaEvolution";
 import {
   getAnalysisById,
   getLatestCompletedAnalysis,
   getAllAnalysesWithContext,
 } from "@/actions/architect-actions";
+import { getEvolutionsByAnalysis } from "@/actions/idea-evolution-actions";
 import type {
   AnalysisDocument,
   AnalysisWithContext,
+  IdeaEvolution,
   VisualStrategy as VisualStrategyType,
 } from "@/lib/types";
 
@@ -31,9 +39,9 @@ function tryParseVisualStrategy(content: string): VisualStrategyType | null {
     if (
       parsed &&
       typeof parsed === "object" &&
-      (Array.isArray(parsed.personas) || parsed.revenueModel)
+      (Array.isArray(parsed.personas) || parsed.revenueModel || parsed.revenue_model)
     ) {
-      return parsed as VisualStrategyType;
+      return normalizeVisualStrategy(parsed);
     }
     return null;
   } catch {
@@ -46,6 +54,158 @@ interface AnalysisData {
   documents: AnalysisDocument[];
 }
 
+function StrategyPane({ visualData, strategyDoc }: { visualData: VisualStrategyType | null; strategyDoc: AnalysisDocument | null }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface-0 p-4">
+      <h2 className="text-lg font-semibold mb-4">Visual Strategic Analysis</h2>
+      {visualData ? (
+        <VisualStrategy data={visualData} />
+      ) : strategyDoc ? (
+        <ScrollArea className="h-[700px]">
+          <pre className="text-sm font-mono whitespace-pre-wrap p-4">
+            {strategyDoc.content}
+          </pre>
+        </ScrollArea>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No strategic analysis document available.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PrdPane({ prdDoc }: { prdDoc: AnalysisDocument | null }) {
+  if (!prdDoc) {
+    return (
+      <div className="rounded-xl border border-border bg-surface-0 p-4">
+        <p className="text-sm text-muted-foreground">
+          No product brief available.
+        </p>
+      </div>
+    );
+  }
+
+  return <DocumentViewer document={prdDoc} copyLabel="Copy for AI Agent" />;
+}
+
+interface RightPaneProps {
+  executionPrompts: AnalysisDocument[];
+  prdDoc: AnalysisDocument | null;
+  selectedId: string | null;
+  evolutions: IdeaEvolution[];
+  onEvolutionsChange: () => void;
+}
+
+function RightPane({ executionPrompts, prdDoc, selectedId, evolutions, onEvolutionsChange }: RightPaneProps) {
+  const hasEPs = executionPrompts.length > 0;
+  const defaultTab = hasEPs ? "execution" : "prd";
+
+  const evolution = useIdeaEvolution(selectedId);
+  const isRunning = evolution.status === "analyzing" || evolution.status === "generating";
+
+  // Track which past evolution is being viewed
+  const [viewingEvolution, setViewingEvolution] = useState<IdeaEvolution | null>(null);
+
+  // Reload evolutions when a new one completes
+  useEffect(() => {
+    if (evolution.status === "complete") {
+      onEvolutionsChange();
+    }
+  }, [evolution.status, onEvolutionsChange]);
+
+  // Clear viewed evolution when a new one starts running
+  useEffect(() => {
+    if (isRunning) {
+      setViewingEvolution(null);
+    }
+  }, [isRunning]);
+
+  // Determine what to show: active run takes priority, then viewed past evolution
+  const showImpact = evolution.impactAnalysis ?? viewingEvolution?.impactAnalysis ?? null;
+  const showEpContent = evolution.epContent ?? viewingEvolution?.epContent ?? null;
+  const showMeta = evolution.completedEvolution ?? viewingEvolution;
+
+  return (
+    <Tabs defaultValue={defaultTab}>
+      <TabsList className="w-full">
+        {hasEPs && (
+          <TabsTrigger value="execution" className="flex-1">
+            Execution Prompts
+          </TabsTrigger>
+        )}
+        <TabsTrigger value="prd" className="flex-1">
+          Product Brief
+        </TabsTrigger>
+        <TabsTrigger value="evolve" className="flex-1">
+          Evolve
+        </TabsTrigger>
+      </TabsList>
+      {hasEPs && (
+        <TabsContent value="execution">
+          <ExecutionPromptViewer prompts={executionPrompts} />
+        </TabsContent>
+      )}
+      <TabsContent value="prd">
+        <PrdPane prdDoc={prdDoc} />
+      </TabsContent>
+      <TabsContent value="evolve">
+        <div className="space-y-4">
+          <IdeaChatInput
+            onSubmit={evolution.submitIdea}
+            isRunning={isRunning}
+            onCancel={evolution.cancel}
+          />
+
+          {evolution.error && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+              <p className="text-sm text-red-400">{evolution.error}</p>
+            </div>
+          )}
+
+          {/* Viewing a past evolution banner */}
+          {viewingEvolution && !isRunning && evolution.status !== "complete" && (
+            <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-2">
+              <p className="text-sm text-primary/80">
+                Viewing: &ldquo;{viewingEvolution.ideaText.slice(0, 60)}{viewingEvolution.ideaText.length > 60 ? "..." : ""}&rdquo;
+              </p>
+              <button
+                onClick={() => setViewingEvolution(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+          {showImpact && (
+            <ImpactAnalysisCard impactAnalysis={showImpact} />
+          )}
+
+          {showEpContent && (
+            <IncrementalEPViewer
+              epContent={showEpContent}
+              newDependencies={showMeta?.newDependencies ?? undefined}
+              newEnvVars={showMeta?.newEnvVars ?? undefined}
+              setupSteps={showMeta?.setupSteps ?? undefined}
+              documentUpdates={showMeta?.documentUpdates ?? undefined}
+            />
+          )}
+
+          <IdeaEvolutionHistory
+            evolutions={evolutions}
+            onSelect={(evo) => {
+              if (evo.status === "completed") {
+                setViewingEvolution(evo);
+              }
+            }}
+          />
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
 function BlueprintContent() {
   const searchParams = useSearchParams();
   const requestedId = searchParams.get("analysisId");
@@ -54,7 +214,7 @@ function BlueprintContent() {
   const [selectedId, setSelectedId] = useState<string | null>(requestedId);
   const [data, setData] = useState<AnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [prdCopied, setPrdCopied] = useState(false);
+  const [evolutions, setEvolutions] = useState<IdeaEvolution[]>([]);
 
   // Load all completed analyses for the selector
   useEffect(() => {
@@ -100,6 +260,28 @@ function BlueprintContent() {
     [loadAnalysis]
   );
 
+  // Load evolutions for selected analysis
+  const loadEvolutions = useCallback(async (id: string | null) => {
+    if (!id) {
+      setEvolutions([]);
+      return;
+    }
+    try {
+      const evos = await getEvolutionsByAnalysis(id);
+      setEvolutions(evos);
+    } catch {
+      setEvolutions([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadEvolutions(selectedId);
+  }, [selectedId, loadEvolutions]);
+
+  const handleEvolutionsChange = useCallback(() => {
+    loadEvolutions(selectedId);
+  }, [selectedId, loadEvolutions]);
+
   const prdDoc = useMemo(
     () => data?.documents.find((d) => d.type === "app_prd") ?? null,
     [data]
@@ -108,25 +290,14 @@ function BlueprintContent() {
     () => data?.documents.find((d) => d.type === "strategic_analysis") ?? null,
     [data]
   );
-  const starterDoc = useMemo(
-    () => data?.documents.find((d) => d.type === "starter_payload") ?? null,
-    [data]
-  );
   const visualData = useMemo(() => {
     if (!strategyDoc) return null;
     return tryParseVisualStrategy(strategyDoc.content);
   }, [strategyDoc]);
-
-  const handleCopyPrd = async () => {
-    if (!prdDoc) return;
-    try {
-      await navigator.clipboard.writeText(prdDoc.content);
-      setPrdCopied(true);
-      setTimeout(() => setPrdCopied(false), 2000);
-    } catch {
-      console.error("Failed to copy to clipboard");
-    }
-  };
+  const executionPromptDocs = useMemo(
+    () => data?.documents.filter((d) => d.type.startsWith("execution_prompt_")) ?? [],
+    [data]
+  );
 
   if (loading) {
     return (
@@ -143,7 +314,7 @@ function BlueprintContent() {
           <h2 className="text-xl font-semibold">No Completed Analyses</h2>
           <p className="text-muted-foreground max-w-md">
             Run an analysis from the Architect page first. Once completed, your
-            blueprint with visual strategy, PRD, and starter payload will appear here.
+            blueprint with visual strategy and product brief will appear here.
           </p>
         </div>
       </div>
@@ -151,13 +322,13 @@ function BlueprintContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {/* Top bar with selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Blueprint</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Blueprint</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Visual strategy, PRD, and starter payload for{" "}
+            Visual strategy and AI-ready product brief for{" "}
             <span className="font-medium text-foreground">
               {data.analysis.opportunityTitle}
             </span>
@@ -179,73 +350,40 @@ function BlueprintContent() {
         )}
       </div>
 
-      {/* Main layout: left (strategy) + right (PRD/starter) */}
-      <div className="flex gap-4 items-start">
-        {/* Left pane: Visual Strategy */}
-        <div className="w-[55%] shrink-0">
-          <div className="rounded-lg border bg-card p-4">
-            <h2 className="text-lg font-semibold mb-4">Visual Strategic Analysis</h2>
-            {visualData ? (
-              <VisualStrategy data={visualData} />
-            ) : strategyDoc ? (
-              <ScrollArea className="h-[700px]">
-                <pre className="text-sm font-mono whitespace-pre-wrap p-4">
-                  {strategyDoc.content}
-                </pre>
-              </ScrollArea>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No strategic analysis document available.
-              </p>
-            )}
-          </div>
-        </div>
+      {/* Mobile: tab layout */}
+      <div className="lg:hidden">
+        <Tabs defaultValue="strategy">
+          <TabsList className="w-full">
+            <TabsTrigger value="strategy" className="flex-1">Visual Strategy</TabsTrigger>
+            <TabsTrigger value="docs" className="flex-1">
+              {executionPromptDocs.length > 0 ? "Prompts & Brief" : "Product Brief"}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="strategy">
+            <StrategyPane visualData={visualData} strategyDoc={strategyDoc} />
+          </TabsContent>
+          <TabsContent value="docs">
+            <RightPane
+              executionPrompts={executionPromptDocs}
+              prdDoc={prdDoc}
+              selectedId={selectedId}
+              evolutions={evolutions}
+              onEvolutionsChange={handleEvolutionsChange}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
 
-        {/* Right pane: PRD + Starter Payload tabs */}
-        <div className="flex-1 min-w-0">
-          <Tabs defaultValue="prd">
-            <TabsList>
-              <TabsTrigger value="prd">PRD</TabsTrigger>
-              <TabsTrigger value="starter">Starter Payload</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="prd">
-              {prdDoc ? (
-                <div className="rounded-lg border bg-card">
-                  <div className="flex items-center justify-between border-b px-4 py-2">
-                    <h3 className="text-sm font-medium">{prdDoc.title}</h3>
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={handleCopyPrd}
-                    >
-                      {prdCopied ? "Copied!" : "Copy"}
-                    </Button>
-                  </div>
-                  <ScrollArea className="h-[650px]">
-                    <pre className="p-4 text-sm font-mono whitespace-pre-wrap leading-relaxed">
-                      {prdDoc.content}
-                    </pre>
-                  </ScrollArea>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground p-4">
-                  No PRD document available.
-                </p>
-              )}
-            </TabsContent>
-
-            <TabsContent value="starter">
-              {starterDoc ? (
-                <StarterPayloadViewer content={starterDoc.content} />
-              ) : (
-                <p className="text-sm text-muted-foreground p-4">
-                  No starter payload available.
-                </p>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+      {/* Desktop: side-by-side */}
+      <div className="hidden lg:grid lg:grid-cols-[55fr_45fr] gap-4 items-start">
+        <StrategyPane visualData={visualData} strategyDoc={strategyDoc} />
+        <RightPane
+          executionPrompts={executionPromptDocs}
+          prdDoc={prdDoc}
+          selectedId={selectedId}
+          evolutions={evolutions}
+          onEvolutionsChange={handleEvolutionsChange}
+        />
       </div>
     </div>
   );

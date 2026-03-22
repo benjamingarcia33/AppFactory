@@ -1,0 +1,206 @@
+{
+  "mvpScope": {
+    "coreFeatures": [
+      "Pressure Simulation Engine: Real-time AI conversation partner using Deepgram streaming WebSocket for sub-300ms transcription, GPT-4o for interruption generation, and ElevenLabs TTS for voice delivery. Interruptions trigger at configurable thresholds (pause detection >1.2s or mid-sentence at 15-25 word intervals). Three difficulty levels: Supportive, Challenging, Adversarial. Sessions capped at 5-15 minutes for MVP.",
+      "Honest AI Feedback Dashboard: Post-session analysis using OpenAI Whisper large-v3 for accurate transcription, then GPT-4o for scoring filler words (um, uh, like, you know), pacing (WPM), clarity (sentence completion rate), and coherence (topic drift score). Every score shown with plain-language explanation and the raw data behind it. Progress tracked against user's own baseline, not population averages.",
+      "Scenario Library (5 MVP Scenarios): Job Interview (behavioral questions), Investor Pitch (skeptical VC persona), Impromptu Speech (random topic, 2-minute timer), Difficult Conversation (conflict simulation), and Classroom Presentation (student Q&A). Each scenario has a system prompt defining AI persona, pressure tactics, and topic domain. Scenarios unlock progressively based on sessions completed.",
+      "Generous Free Tier with Hard Paywall Boundary: Free users get 3 full pressure sessions per week across all 5 scenarios, full feedback dashboard, and 30-day progress history. Premium ($9.99/month or $79.99/year) unlocks unlimited sessions, advanced analytics (weakness pattern tracking across sessions), and priority scenario access. Free tier is genuinely useful — no feature crippling, no nag screens after every session.",
+      "Transparent Ethical Billing: In-app subscription via RevenueCat SDK handling both App Store and future Play Store. One-tap cancellation from settings screen. Push notification 3 days before renewal. Pause subscription option (30 or 60 days). Pricing shown on first app open before any account creation. No trial-to-paid conversion without explicit confirmation step.",
+      "Session History and Progress Tracking: Local SQLite storage via Expo SQLite for session metadata, scores, and transcripts. Cloud sync to Supabase Postgres for premium users. Visual progress charts (React Native Skia) showing filler word frequency trend, pacing consistency, and session streak. Weekly summary notification with one key improvement insight.",
+      "Offline-Capable Core with Graceful Degradation: Session metadata, scenario content, and last 10 feedback summaries cached locally. If Deepgram WebSocket fails, app falls back to AssemblyAI streaming with user-visible status indicator. If GPT-4o is unavailable, pre-generated interruption banks (200 phrases per scenario) serve as fallback. App never crashes silently — all API failures surface as friendly in-app messages with retry options."
+    ],
+    "deferredFeatures": [
+      "Android launch — iOS only for MVP to reduce testing surface and App Store review complexity",
+      "Custom scenario builder — users creating their own AI personas and pressure scripts",
+      "Social features — sharing session clips, leaderboards, or peer comparison",
+      "Video analysis — facial expression and body language feedback via camera",
+      "Debate mode — two-user real-time adversarial sessions",
+      "Advanced analytics tier — ML-based weakness pattern clustering across 50+ sessions",
+      "Wearable integration — Apple Watch session controls or heart rate correlation",
+      "Multilingual support — Spanish, French, Mandarin pressure sessions",
+      "Coach marketplace — human coaches reviewing AI session recordings",
+      "Calendar integration — scheduled practice reminders synced to Google/Apple Calendar"
+    ],
+    "definitionOfDone": "MVP is done when: (1) A new user can download the app, create an account, complete a full pressure simulation session in the Job Interview scenario on the free tier, receive a feedback report with scores and plain-language explanations, and view their progress dashboard — all without encountering a paywall, crash, or loading spinner exceeding 3 seconds. (2) The interruption engine delivers AI-generated interruptions with end-to-end latency under 800ms on a standard LTE connection in 90% of test cases. (3) All 5 scenarios are playable on free tier within weekly session limits. (4) Subscription purchase, cancellation, and pause flows work correctly via RevenueCat in sandbox environment. (5) App passes Apple App Store review on first submission. (6) 10 beta users complete at least 3 sessions each and report the pressure simulation feels genuinely challenging (qualitative threshold: 7/10 average on post-session pressure rating). (7) No crash rate above 1% on Sentry in first 48 hours post-launch.",
+    "timeline": "16 weeks total for solo developer. Weeks 1-3: Foundation and infrastructure. Weeks 4-7: Core AI pipeline and pressure engine. Weeks 8-10: Feedback dashboard, scenarios, and progress tracking. Weeks 11-13: Billing, polish, and offline resilience. Weeks 14-15: Beta testing with 10-15 users and bug fixes. Week 16: App Store submission and launch."
+  },
+  "techStack": {
+    "frontend": "React Native 0.74 with Expo SDK 51 (managed workflow). Justification: Solo developer needs maximum code reuse and fast iteration. Expo managed workflow eliminates native build complexity for MVP. expo-av for audio capture and playback. expo-sqlite for local storage. React Navigation 6 for routing. React Native Skia for progress charts (performant, no bridge overhead). Zustand for lightweight global state management (simpler than Redux for one developer). NativeWind 4 (Tailwind for React Native) for styling consistency and speed. TypeScript throughout for catching bugs without a QA team.",
+    "backend": "Supabase Edge Functions (Deno runtime) as Backend-for-Frontend layer. Justification: Supabase free tier covers MVP traffic (500MB database, 2GB bandwidth, 500K edge function invocations/month). Edge Functions handle: Deepgram WebSocket proxy (to hide API keys from client), GPT-4o interruption generation with content moderation, post-session Whisper transcription jobs, and RevenueCat webhook processing. No separate Node.js server to maintain — reduces infrastructure ops to near zero for a solo developer. Functions deploy via Supabase CLI in under 60 seconds.",
+    "database": "Supabase Postgres (cloud) + Expo SQLite (on-device). Justification: Supabase Postgres stores user profiles, session metadata, scores, and subscription state for premium users with cloud sync. Row-level security policies ensure users can only access their own data. Expo SQLite stores session transcripts, cached feedback, and scenario content locally — enabling offline access and reducing cloud read costs. Schema: users table, sessions table (session_id, user_id, scenario_id, duration, scores_json, transcript_text, created_at), scenarios table (static, seeded at deploy), progress_snapshots table (weekly aggregates). Supabase Realtime not used in MVP to reduce complexity.",
+    "aiIntegration": "Four AI services with clear fallback chain: (1) Deepgram Nova-2 streaming API via WebSocket for real-time transcription during sessions — primary transcription engine, $0.0043/minute, ~$0.52/user/month at 3 sessions/week. (2) OpenAI GPT-4o via Supabase Edge Function for interruption generation (system prompt + last 800 tokens of transcript context, max 60 output tokens per interruption) and post-session coherence/clarity scoring. (3) OpenAI Whisper large-v3 via OpenAI API for post-session high-accuracy transcription used in feedback analysis — triggered async after session ends. (4) ElevenLabs Turbo v2 TTS for AI coach voice delivery of interruptions — 200 pre-generated common phrases cached as static assets in app bundle to reduce API calls by ~70%. Fallbacks: AssemblyAI real-time streaming if Deepgram fails; Claude 3.5 Sonnet if GPT-4o rate-limits; pre-generated phrase bank if ElevenLabs fails. All AI calls routed through Supabase Edge Functions — no API keys in client bundle.",
+    "infrastructure": "Supabase (database + edge functions + auth + storage) on free tier scaling to Pro ($25/month) at ~500 MAU. Expo EAS Build for iOS builds ($0 on free tier, 30 builds/month). Expo EAS Submit for App Store submission automation. RevenueCat free tier (up to $2,500 MRR) for subscription management. Sentry free tier (5K errors/month) for crash reporting. PostHog free tier (1M events/month) for product analytics. Cloudflare free tier for any static assets. Total estimated monthly infrastructure cost at launch: $0-25/month. At 500 MAU: ~$50-75/month (Supabase Pro + ElevenLabs usage). At 2000 MAU: ~$120-180/month. All within solo developer budget constraints."
+  },
+  "twelveWeekPlan": [
+    {
+      "weeks": "Weeks 1-2",
+      "focus": "Foundation: Project setup, auth, navigation skeleton, and local database",
+      "deliverables": [
+        "Initialize Expo SDK 51 project with TypeScript, NativeWind, and Zustand. Configure ESLint, Prettier, and absolute imports.",
+        "Set up Supabase project: configure auth (email + Apple Sign-In via expo-apple-authentication), create initial schema migrations for users and sessions tables, enable Row Level Security policies.",
+        "Build navigation structure: onboarding stack (3 screens), main tab navigator (Practice, Progress, Settings), session modal stack. All screens stubbed with placeholder UI.",
+        "Implement Expo SQLite local database with typed repository layer: SessionRepository, ScenarioRepository, UserPreferencesRepository.",
+        "Configure Sentry SDK and PostHog SDK with anonymous event tracking from day one. Set up basic crash reporting.",
+        "Set up Supabase CLI with local development environment and migration workflow. Document the dev setup in README.",
+        "Deliverable gate: App launches, user can create account via Supabase Auth, navigate all screens (stubbed), and local SQLite reads/writes work correctly."
+      ]
+    }
+  ],
+  "testingStrategy": {
+    "unitTesting": "Jest with React Native Testing Library targeting critical business logic only — not UI snapshots. Test files co-located with source. Priority test targets: (1) Score calculation functions — filler word counter, WPM calculator, coherence scorer — these are user-facing claims that must be accurate. (2) SQLite repository layer — session save/load/delete operations. (3) Interruption timing logic — pause detection threshold and word-count trigger calculations. (4) RevenueCat entitlement checking — free tier limit enforcement (3 sessions/week gate). (5) Fallback chain logic — Deepgram failure triggers AssemblyAI, GPT-4o failure triggers phrase bank. Target: 80% coverage on /utils and /services directories, 0% coverage requirement on UI components for MVP. Run via: npx jest --coverage on pre-commit hook using Husky.",
+    "integrationTesting": "Manual integration testing checklist executed by solo developer before each beta build and before App Store submission. Checklist covers: (1) Full session flow — start session, receive 3+ interruptions, complete session, view feedback report. Test on iPhone 13 (primary) and iPhone SE 2nd gen (minimum supported). (2) Offline mode — airplane mode during session, verify local fallback activates and session saves locally. (3) Subscription flow — purchase Pro in StoreKit sandbox, verify RevenueCat entitlement unlocks unlimited sessions, cancel subscription, verify reversion to free tier limits after grace period. (4) Auth edge cases — expired JWT refresh, account deletion flow, Apple Sign-In revocation. (5) API failure injection — manually kill Deepgram WebSocket mid-session, verify AssemblyAI fallback activates within 2 seconds with user-visible status change. Estimated time per full manual integration pass: 90 minutes.",
+    "aiQualityTesting": "AI quality is evaluated on two dimensions — interruption quality and feedback accuracy. Interruption quality: Maintain a golden dataset of 20 recorded test sessions (5 per scenario) with human-labeled ideal interruption points and question types. Before each beta release, run these sessions through the interruption engine and score: (1) timing appropriateness (did interruption occur at a natural pressure point vs. mid-word), (2) question relevance (does the follow-up question relate to what was said), (3) difficulty calibration (does Adversarial mode feel harder than Supportive). Score manually on 1-5 scale. Regression threshold: average score must not drop below 3.5 across the golden set. Feedback accuracy: Cross-validate filler word counts from GPT-4o analysis against manual counts on 10 sample transcripts. Acceptable error margin: ±10% on filler word frequency. WPM calculation is deterministic (word count / time) so unit tested. Coherence scoring is subjective — validate that scores directionally match human judgment (high coherence sessions score higher than rambling sessions) on 5 paired examples.",
+    "performanceTesting": "Solo developer performance testing using Xcode Instruments and React Native Performance Monitor. Key benchmarks to hit before App Store submission: (1) Interruption end-to-end latency: measure time from pause detection trigger to ElevenLabs audio playback start. Target: under 800ms at p90 on LTE. Test on real device (iPhone 13) with Charles Proxy to simulate 4G throttling (20 Mbps down, 5 Mbps up, 50ms latency). (2) App cold start time: target under 2.5 seconds from tap to interactive home screen on iPhone SE 2nd gen. Measure with Xcode launch time instrument. (3) Session screen memory: monitor heap during 15-minute session. Target: under 150MB peak, no memory leak pattern (heap should not grow monotonically). (4) Feedback report render time: target under 1 second from session end to feedback screen fully rendered with charts. (5) SQLite query performance: session history load (last 30 sessions) must complete under 100ms. No load testing of backend for MVP — Supabase free tier handles expected beta traffic (10-20 users).",
+    "abTesting": "No formal A/B testing infrastructure at MVP launch — PostHog feature flags used for simple sequential testing instead. Two tests planned for post-launch weeks 1-4: (1) Onboarding flow test: Version A shows pressure simulation demo video on screen 2 of onboarding; Version B shows a live interactive mini-session (30-second taste of interruption engine). Roll out Version A to first 50 users, Version B to next 50 users. Success metric: session completion rate in first 7 days. Implement via PostHog feature flag checked in onboarding navigator. (2) Free tier limit messaging test: Version A shows session limit as '3 sessions remaining this week'; Version B shows it as 'You have used X of 3 free sessions'. Measure conversion to premium within 14 days. Both tests run sequentially (not simultaneously) to avoid interaction effects with a small user base. Results evaluated manually in PostHog dashboard — no statistical significance tooling needed at this scale."
+  },
+  "launchChecklist": [
+    {
+      "item": "All 5 MVP scenarios tested end-to-end on physical iPhone 13 and iPhone SE 2nd gen with zero crashes across 3 full sessions each",
+      "category": "Technical"
+    },
+    {
+      "item": "Sentry error tracking confirmed active with test error successfully captured and alerted via email",
+      "category": "Technical"
+    },
+    {
+      "item": "PostHog analytics confirmed tracking: session_started, session_completed, interruption_triggered, feedback_viewed, upgrade_tapped events",
+      "category": "Technical"
+    },
+    {
+      "item": "RevenueCat sandbox purchase, restore, cancellation, and pause flows all verified on StoreKit sandbox environment",
+      "category": "Technical"
+    },
+    {
+      "item": "Supabase Row Level Security policies audited — confirmed users cannot read or write other users' session data via direct API calls",
+      "category": "Technical"
+    },
+    {
+      "item": "All API keys confirmed absent from client bundle — verified via grep and Expo bundle inspection",
+      "category": "Technical"
+    },
+    {
+      "item": "Offline fallback tested: airplane mode during active session correctly activates phrase bank and saves session locally",
+      "category": "Technical"
+    },
+    {
+      "item": "App tested on iOS 16 (minimum supported) and iOS 17 — no UI regressions or API incompatibilities",
+      "category": "Technical"
+    },
+    {
+      "item": "EAS Build production profile generates valid IPA with correct bundle identifier and provisioning profile",
+      "category": "Technical"
+    },
+    {
+      "item": "Deepgram, OpenAI, and ElevenLabs API usage alerts configured at 80% of monthly budget thresholds",
+      "category": "Technical"
+    },
+    {
+      "item": "App Store Connect account in good standing, bundle ID registered, app record created with correct category (Education)",
+      "category": "Store Submission"
+    },
+    {
+      "item": "App icon (1024x1024 PNG, no alpha channel) and all required screenshot sizes prepared for iPhone 6.7-inch, 6.5-inch, and 5.5-inch displays",
+      "category": "Store Submission"
+    },
+    {
+      "item": "App Store description written with keyword-optimized title ('Cognitize: AI Speech Coach'), subtitle, and description under 4000 characters",
+      "category": "Store Submission"
+    },
+    {
+      "item": "Privacy policy URL live and accessible — covers audio recording, data storage, third-party AI processing (OpenAI, Deepgram, ElevenLabs), and GDPR/CCPA rights",
+      "category": "Store Submission"
+    },
+    {
+      "item": "App Privacy nutrition label completed in App Store Connect — audio data, usage data, and identifiers accurately declared",
+      "category": "Store Submission"
+    },
+    {
+      "item": "Subscription in-app purchase products created in App Store Connect (monthly $9.99, annual $79.99) with correct introductory offer configuration",
+      "category": "Store Submission"
+    },
+    {
+      "item": "Age rating questionnaire completed — confirmed 4+ rating with no objectionable content flags",
+      "category": "Store Submission"
+    },
+    {
+      "item": "TestFlight build distributed to 10-15 beta users with at least 7 days of testing completed before public submission",
+      "category": "Store Submission"
+    },
+    {
+      "item": "App Review notes prepared explaining microphone usage, subscription model, and AI processing for reviewer context",
+      "category": "Store Submission"
+    },
+    {
+      "item": "Supabase project upgraded to Pro plan ($25/month) before launch to ensure no free tier limits hit on launch day traffic",
+      "category": "Monitoring"
+    },
+    {
+      "item": "Supabase database connection pooling configured via PgBouncer for expected concurrent session load",
+      "category": "Monitoring"
+    },
+    {
+      "item": "Uptime monitoring configured on Supabase Edge Function health endpoint via Better Uptime free tier with SMS alert to developer",
+      "category": "Monitoring"
+    },
+    {
+      "item": "PostHog dashboard configured with Day 1 launch metrics: new signups per hour, session completion rate, crash-free session rate",
+      "category": "Monitoring"
+    },
+    {
+      "item": "Sentry alert rules configured: alert immediately if crash rate exceeds 1% in any 1-hour window post-launch",
+      "category": "Monitoring"
+    },
+    {
+      "item": "OpenAI and Deepgram rate limit monitoring — Edge Function logs streamed to Supabase log drain with error pattern alerts",
+      "category": "Monitoring"
+    },
+    {
+      "item": "Support email address (support@cognitize.app or equivalent) active and monitored, with auto-reply acknowledging receipt within 24 hours",
+      "category": "Support"
+    },
+    {
+      "item": "In-app feedback button on Settings screen routes to support email with pre-populated device info (iOS version, app version, user ID hash)",
+      "category": "Support"
+    },
+    {
+      "item": "FAQ document prepared covering: how free tier limits work, how to cancel subscription, what data is stored, how AI scoring works",
+      "category": "Support"
+    },
+    {
+      "item": "App Store review response template prepared for common 1-star complaints (paywall confusion, session crashes, feedback accuracy)",
+      "category": "Support"
+    },
+    {
+      "item": "Rollback plan documented: if critical bug found post-launch, Expo EAS Update (OTA) can push JS bundle fix within 2 hours without App Store review for non-native changes",
+      "category": "Rollback"
+    },
+    {
+      "item": "Previous TestFlight build retained and promotable — if OTA update insufficient, expedited App Store review request process documented",
+      "category": "Rollback"
+    },
+    {
+      "item": "Supabase database point-in-time recovery confirmed enabled on Pro plan — can restore to any point within 7 days",
+      "category": "Rollback"
+    },
+    {
+      "item": "Feature flag in PostHog configured to disable interruption engine and fall back to passive recording mode if AI pipeline has systemic failure — killswitch tested",
+      "category": "Rollback"
+    },
+    {
+      "item": "Week 1 success metrics defined and baseline set: target 100 downloads, 60% onboarding completion, 40% session completion rate, less than 1% crash rate, 5% free-to-paid conversion within 7 days",
+      "category": "Metrics"
+    },
+    {
+      "item": "30-day retention cohort tracking configured in PostHog — Day 1, Day 7, Day 14, Day 30 retention events instrumented",
+      "category": "Metrics"
+    },
+    {
+      "item": "Revenue tracking confirmed in RevenueCat dashboard with MRR, new subscribers, and churn rate visible from day one",
+      "category": "Metrics"
+    },
+    {
+      "item": "Session quality metric tracked: average post-session pressure rating (1-10 in-app prompt after each session) logged to PostHog as session_pressure_rating event",
+      "category": "Metrics"
+    }
+  ]
+}

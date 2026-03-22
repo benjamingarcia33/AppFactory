@@ -2,6 +2,8 @@ import type { AppStore, ScrapedApp, ScrapedReview } from "@/lib/types";
 import * as googlePlay from "./google-play";
 import * as appStore from "./app-store";
 
+export { partitionByEnrichment } from "./app-store";
+
 export async function scrapeCategory(
   store: AppStore,
   category: string

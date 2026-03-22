@@ -7,33 +7,42 @@ import type { VisualPersona } from "@/lib/types";
 
 interface PersonaCardsProps {
   personas: VisualPersona[];
+  hideTitle?: boolean;
 }
 
-export function PersonaCards({ personas }: PersonaCardsProps) {
+export function PersonaCards({ personas, hideTitle }: PersonaCardsProps) {
+  if (!personas || personas.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground py-4 text-center">
+        Persona data not available.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold">User Personas</h3>
+      {!hideTitle && <h3 className="text-lg font-semibold">User Personas</h3>}
       <ScrollArea className="w-full">
         <div className="flex gap-4 pb-4">
           {personas.map((persona, i) => (
-            <Card key={i} className="min-w-[300px] max-w-[340px] shrink-0">
+            <Card key={i} className="min-w-[300px] max-w-[340px] shrink-0 bg-surface-0 border border-border rounded-xl">
               <CardHeader>
-                <div className="text-4xl mb-1">{persona.avatar}</div>
-                <CardTitle className="text-base">{persona.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{persona.tagline}</p>
+                <div className="text-4xl mb-1">{persona?.avatar ?? "?"}</div>
+                <CardTitle className="text-base">{persona?.name ?? "Unknown Persona"}</CardTitle>
+                <p className="text-sm text-muted-foreground">{persona?.tagline ?? ""}</p>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-xs text-muted-foreground">{persona.demographics}</p>
+                <p className="text-xs text-muted-foreground">{persona?.demographics ?? "No demographics"}</p>
                 <div>
                   <p className="text-xs font-medium mb-1.5">Frustrations</p>
                   <div className="flex flex-wrap gap-1">
-                    {persona.frustrations.map((f, j) => (
+                    {(persona?.frustrations ?? []).map((f, j) => (
                       <Badge
                         key={j}
                         variant="outline"
-                        className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800 text-[10px]"
+                        className="bg-red-500/10 text-red-400 border-red-500/20 text-[11px]"
                       >
-                        {f}
+                        {f ?? ""}
                       </Badge>
                     ))}
                   </div>
@@ -41,13 +50,13 @@ export function PersonaCards({ personas }: PersonaCardsProps) {
                 <div>
                   <p className="text-xs font-medium mb-1.5">Goals</p>
                   <div className="flex flex-wrap gap-1">
-                    {persona.goals.map((g, j) => (
+                    {(persona?.goals ?? []).map((g, j) => (
                       <Badge
                         key={j}
                         variant="outline"
-                        className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800 text-[10px]"
+                        className="bg-green-500/10 text-green-400 border-green-500/20 text-[11px]"
                       >
-                        {g}
+                        {g ?? ""}
                       </Badge>
                     ))}
                   </div>
@@ -56,7 +65,7 @@ export function PersonaCards({ personas }: PersonaCardsProps) {
               <CardFooter>
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium">Willingness to pay:</span>{" "}
-                  {persona.willingnessToPay}
+                  {persona?.willingnessToPay ?? "Unknown"}
                 </p>
               </CardFooter>
             </Card>

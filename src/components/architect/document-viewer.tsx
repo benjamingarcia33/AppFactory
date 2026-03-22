@@ -8,9 +8,10 @@ import type { AnalysisDocument } from "@/lib/types";
 
 interface DocumentViewerProps {
   document: AnalysisDocument;
+  copyLabel?: string;
 }
 
-export function DocumentViewer({ document }: DocumentViewerProps) {
+export function DocumentViewer({ document, copyLabel }: DocumentViewerProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -24,20 +25,20 @@ export function DocumentViewer({ document }: DocumentViewerProps) {
   };
 
   return (
-    <div className="relative rounded-lg border bg-card">
+    <div className="relative rounded-xl border border-border bg-surface-0">
       <div className="flex items-center justify-between border-b px-4 py-2">
         <h3 className="text-sm font-medium">{document.title}</h3>
         <Button
-          variant="outline"
+          variant={copyLabel ? "default" : "outline"}
           size="xs"
           onClick={handleCopy}
         >
-          {copied ? "Copied!" : "Copy"}
+          {copied ? "Copied!" : copyLabel ?? "Copy"}
         </Button>
       </div>
 
       <ScrollArea className="h-[600px]">
-        <div className="prose prose-sm dark:prose-invert max-w-none p-6">
+        <div className="prose prose-sm prose-invert max-w-none p-6">
           <ReactMarkdown>{document.content}</ReactMarkdown>
         </div>
       </ScrollArea>

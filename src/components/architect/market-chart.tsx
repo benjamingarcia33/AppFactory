@@ -14,12 +14,21 @@ import type { MarketDataPoint } from "@/lib/types";
 
 interface MarketChartProps {
   marketData: MarketDataPoint[];
+  hideTitle?: boolean;
 }
 
-export function MarketChart({ marketData }: MarketChartProps) {
+export function MarketChart({ marketData, hideTitle }: MarketChartProps) {
+  if (!marketData || marketData.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground py-4 text-center">
+        Market data not available.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold">Market Segments</h3>
+      {!hideTitle && <h3 className="text-lg font-semibold">Market Segments</h3>}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Market Size by Segment (in millions)</CardTitle>
@@ -62,20 +71,20 @@ export function MarketChart({ marketData }: MarketChartProps) {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b bg-surface-1">
                   <th className="text-left py-1.5 px-2 font-medium">Segment</th>
                   <th className="text-right py-1.5 px-2 font-medium">Size</th>
                   <th className="text-right py-1.5 px-2 font-medium">Growth</th>
                   <th className="text-right py-1.5 px-2 font-medium">Our Share</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-surface-0">
                 {marketData.map((point, i) => (
                   <tr key={i} className="border-b last:border-b-0">
-                    <td className="py-1.5 px-2">{point.segment}</td>
-                    <td className="text-right py-1.5 px-2">${point.size}M</td>
-                    <td className="text-right py-1.5 px-2">{point.growth}%</td>
-                    <td className="text-right py-1.5 px-2">{point.ourShare}%</td>
+                    <td className="py-1.5 px-2">{point?.segment ?? "Unknown"}</td>
+                    <td className="text-right py-1.5 px-2">${point?.size ?? 0}M</td>
+                    <td className="text-right py-1.5 px-2">{point?.growth ?? 0}%</td>
+                    <td className="text-right py-1.5 px-2">{point?.ourShare ?? 0}%</td>
                   </tr>
                 ))}
               </tbody>

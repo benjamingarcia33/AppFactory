@@ -1,46 +1,189 @@
 import store from "app-store-scraper";
 import type { ScrapedApp, ScrapedReview } from "@/lib/types";
+import { withRetry } from "./utils";
 
 /**
- * Estimate installs from ratings count.
- * Industry standard: iOS installs ≈ ratings × 40-80 (median ~50).
- * The `~` prefix marks the value as an estimate.
+ * Parse numeric values that may come as strings with K/M/B suffixes (e.g. "1.9K", "2.2M").
+ * Returns 0 for NaN or unparseable values.
  */
-function estimateInstalls(ratings: number): string {
-  if (ratings <= 0) return "N/A";
-  return "~" + (ratings * 50).toLocaleString("en-US");
+function parseNumericValue(val: unknown): number {
+  if (val == null) return 0;
+  if (typeof val === "number") return isNaN(val) ? 0 : val;
+  const str = String(val).trim().toUpperCase();
+  const suffixMatch = str.match(/^(\d+(?:\.\d+)?)\s*(K|M|B)$/);
+  if (suffixMatch) {
+    const num = parseFloat(suffixMatch[1]);
+    const multiplier = { K: 1_000, M: 1_000_000, B: 1_000_000_000 }[suffixMatch[2]]!;
+    return Math.round(num * multiplier);
+  }
+  const parsed = Number(str.replace(/[,+\s]/g, ""));
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 /**
- * Retry wrapper with exponential backoff and jitter.
- * On failure, waits (2^attempt * 500ms) + random jitter before retrying.
+ * Apple does not expose install counts. Previous versions fabricated estimates
+ * from ratings * 4, producing nonsensical numbers. Now we honestly return "N/A"
+ * and let the UI show ratings count as the primary size proxy.
  */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3
-): Promise<T> {
-  let lastError: Error | undefined;
+function getInstallsLabel(): string {
+  return "N/A";
+}
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
+/**
+ * Fetch app metadata directly from the iTunes Lookup API.
+ * Bypasses the app-store-scraper library to avoid its field-naming bugs
+ * (it maps Apple's `userRatingCount` to `reviews`, causing confusion).
+ * Returns exact `averageUserRating`, `userRatingCount`, and `price` from Apple.
+ */
+async function fetchItunesLookup(
+  id: string,
+  country: string = "us"
+): Promise<{ averageUserRating: number; userRatingCount: number; price: number } | null> {
+  try {
+    const res = await fetch(
+      `https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}&country=${encodeURIComponent(country)}&entity=software`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const results = (data.results ?? []) as Record<string, unknown>[];
+    const entry = results.find((r) => r.wrapperType === "software");
+    if (!entry) return null;
+    return {
+      averageUserRating: Number(entry.averageUserRating ?? 0),
+      userRatingCount: Number(entry.userRatingCount ?? 0),
+      price: Number(entry.price ?? 0),
+    };
+  } catch {
+    return null;
+  }
+}
 
-      if (attempt < maxRetries) {
-        const baseDelay = Math.pow(2, attempt) * 500;
-        const jitter = Math.random() * 500;
-        await new Promise((resolve) => setTimeout(resolve, baseDelay + jitter));
+/**
+ * Fetch the App Store star-rating histogram via Cheerio HTML scraping.
+ * Non-critical: returns null if parsing fails or all values are zero.
+ */
+async function fetchAppStoreHistogram(
+  id: string,
+  country: string = "us"
+): Promise<Record<string, number> | null> {
+  try {
+    const { load } = await import("cheerio");
+    const res = await fetch(
+      `https://itunes.apple.com/${encodeURIComponent(country)}/customer-reviews/id${encodeURIComponent(id)}?displayable-kind=11`,
+      {
+        headers: {
+          "X-Apple-Store-Front": "143441-1,29",
+          "User-Agent": "iTunes/12.0",
+        },
       }
+    );
+    if (!res.ok) return null;
+    const html = await res.text();
+    const $ = load(html);
+
+    const histogram: Record<string, number> = {};
+    let hasValues = false;
+
+    $(".rating-count").each((i, el) => {
+      const stars = String(5 - i);
+      const text = $(el).text().trim().replace(/[,\s]/g, "");
+      const count = parseInt(text, 10) || 0;
+      histogram[stars] = count;
+      if (count > 0) hasValues = true;
+    });
+
+    if (!hasValues) {
+      $(".vote .total").each((i, el) => {
+        const stars = String(5 - i);
+        const text = $(el).text().trim().replace(/[,\s]/g, "");
+        const count = parseInt(text, 10) || 0;
+        histogram[stars] = count;
+        if (count > 0) hasValues = true;
+      });
+    }
+
+    return hasValues ? histogram : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validate histogram data consistency.
+ * If histogram sum differs from totalRatings by >5%, log discrepancy.
+ * If weighted average differs from score by >0.15, prefer histogram-derived value.
+ */
+function validateHistogram(app: ScrapedApp): ScrapedApp {
+  if (!app.histogram) return app;
+
+  const hist = app.histogram;
+  const histSum = Object.entries(hist).reduce((sum, [, count]) => sum + count, 0);
+  const weightedSum = Object.entries(hist).reduce(
+    (sum, [stars, count]) => sum + Number(stars) * count, 0
+  );
+
+  if (histSum === 0) return app;
+
+  const histAvg = weightedSum / histSum;
+
+  if (app.ratings > 0) {
+    const sumDiff = Math.abs(histSum - app.ratings) / app.ratings;
+    if (sumDiff > 0.05) {
+      console.log(
+        `[app-store] Histogram discrepancy for "${app.title}": ` +
+        `histogram sum=${histSum}, totalRatings=${app.ratings} (diff=${(sumDiff * 100).toFixed(1)}%)`
+      );
     }
   }
 
-  throw lastError;
+  if (app.score > 0) {
+    const avgDiff = Math.abs(histAvg - app.score);
+    if (avgDiff > 0.15) {
+      console.log(
+        `[app-store] Score discrepancy for "${app.title}": ` +
+        `histogram avg=${histAvg.toFixed(2)}, reported score=${app.score} — using histogram value`
+      );
+      return { ...app, score: Math.round(histAvg * 10) / 10, dataConfidence: "low" };
+    }
+  }
+
+  return app;
+}
+
+/**
+ * Validate scraped app data: clamp score to 0-5, ensure ratings is non-negative.
+ */
+function validateScrapedApp(app: ScrapedApp): ScrapedApp {
+  let { score, ratings } = app;
+  if (score < 0 || score > 5 || isNaN(score)) {
+    console.warn(`[app-store] Invalid score ${score} for "${app.title}", clamping to 0`);
+    score = 0;
+  }
+  if (ratings < 0 || isNaN(ratings)) {
+    console.warn(`[app-store] Invalid ratings ${ratings} for "${app.title}", setting to 0`);
+    ratings = 0;
+  }
+  return { ...app, score, ratings };
+}
+
+/**
+ * Separate apps that failed enrichment (score=0 AND ratings=0) from valid ones.
+ */
+export function partitionByEnrichment(apps: ScrapedApp[]): { valid: ScrapedApp[]; failed: ScrapedApp[] } {
+  const valid: ScrapedApp[] = [];
+  const failed: ScrapedApp[] = [];
+  for (const app of apps) {
+    if (app.score === 0 && app.ratings === 0) {
+      failed.push(app);
+    } else {
+      valid.push(app);
+    }
+  }
+  return { valid, failed };
 }
 
 /**
  * Fallback: use SerpAPI to search App Store apps by term.
- * Only called when SERPAPI_API_KEY is set and the primary scraper fails.
  */
 async function searchAppsSerpApiFallback(
   term: string
@@ -59,19 +202,24 @@ async function searchAppsSerpApiFallback(
   const results = response.organic_results ?? [];
 
   return results.map(
-    (app: Record<string, unknown>): ScrapedApp => ({
-      id: (app.id as string) ?? "",
-      title: (app.title as string) ?? "",
-      store: "app_store",
-      genre: (app.genre as string) ?? term,
-      score: Number(app.rating ?? 0),
-      ratings: Number(app.reviews ?? 0),
-      installs: estimateInstalls(Number(app.reviews ?? 0)),
-      description: (app.description as string) ?? "",
-      icon: (app.icon as string) ?? "",
-      url: (app.link as string) ?? "",
-      developer: (app.developer as string) ?? "",
-    })
+    (app: Record<string, unknown>): ScrapedApp => {
+      const ratingsCount = parseNumericValue(app.reviews ?? 0);
+      return {
+        id: (app.id as string) ?? "",
+        title: (app.title as string) ?? "",
+        store: "app_store",
+        genre: (app.genre as string) ?? term,
+        score: Number(app.rating ?? 0),
+        ratings: ratingsCount,
+        installs: getInstallsLabel(),
+        description: (app.description as string) ?? "",
+        icon: (app.icon as string) ?? "",
+        url: (app.link as string) ?? "",
+        developer: (app.developer as string) ?? "",
+        isEstimatedInstalls: false,
+        dataConfidence: "medium",
+      };
+    }
   );
 }
 
@@ -119,50 +267,127 @@ async function getAppReviewsSerpApiFallback(
 }
 
 /**
- * Enrich apps with score/reviews by fetching individual app details.
- * store.list() does not return score or reviews, so we fetch each app individually.
+ * Enrich apps with score/ratings by calling the iTunes Lookup API directly.
+ * Bypasses the app-store-scraper library's `store.app()` to avoid its
+ * field-naming bug (it maps Apple's `userRatingCount` to `reviews`).
+ *
+ * Field mapping (from iTunes Lookup API):
+ * - `score` = `averageUserRating` (exact from API)
+ * - `ratings` = `userRatingCount` (exact from API)
+ * - `histogram` = from Cheerio HTML scrape (optional, non-critical)
+ * - `reviewCount` is NOT set here — it comes from actual review fetching later
  */
 async function enrichAppMetadata(apps: ScrapedApp[]): Promise<ScrapedApp[]> {
   const CONCURRENCY = 5;
   const enriched = [...apps];
+  let enrichedCount = 0;
+  let failedCount = 0;
+  const failedIndices: number[] = [];
 
   for (let i = 0; i < enriched.length; i += CONCURRENCY) {
+    if (i > 0) {
+      await new Promise((r) => setTimeout(r, 200));
+    }
+
     const batch = enriched.slice(i, i + CONCURRENCY);
+
     const results = await Promise.allSettled(
-      batch.map((app) =>
-        withRetry(() => store.app({ id: app.id }), 1)
-      )
+      batch.map(async (app) => {
+        const [lookup, histogram] = await Promise.all([
+          withRetry(() => fetchItunesLookup(app.id), 2),
+          fetchAppStoreHistogram(app.id).catch(() => null),
+        ]);
+        return { lookup, histogram };
+      })
     );
 
-    results.forEach((result, idx) => {
-      if (result.status === "fulfilled" && result.value) {
-        const detail = result.value;
-        const ratings = Number(detail.reviews ?? 0);
-        enriched[i + idx] = {
-          ...enriched[i + idx],
-          score: Number(detail.score ?? 0),
-          ratings,
-          installs: estimateInstalls(ratings),
+    for (let idx = 0; idx < results.length; idx++) {
+      const result = results[idx];
+      const globalIdx = i + idx;
+      const app = enriched[globalIdx];
+
+      if (result.status === "fulfilled" && result.value.lookup) {
+        const { lookup, histogram } = result.value;
+
+        enriched[globalIdx] = {
+          ...enriched[globalIdx],
+          score: lookup.averageUserRating,
+          ratings: lookup.userRatingCount,
+          installs: getInstallsLabel(),
+          isEstimatedInstalls: false,
+          price: lookup.price > 0 ? lookup.price : undefined,
+          free: lookup.price === 0,
+          histogram: histogram ?? undefined,
+          dataConfidence: "high",
         };
+        enriched[globalIdx] = validateHistogram(enriched[globalIdx]);
+        enrichedCount++;
+      } else {
+        const reason = result.status === "rejected"
+          ? (result.reason instanceof Error ? result.reason.message : String(result.reason))
+          : "empty result (app not found in iTunes Lookup)";
+        console.warn(
+          `[app-store] Enrichment failed for "${app.title}" (id=${app.id}): ${reason}`
+        );
+
+        // Track for batch SerpAPI fallback after all enrichment attempts
+
+        enriched[globalIdx] = { ...enriched[globalIdx], dataConfidence: "low" };
+        failedIndices.push(globalIdx);
+        failedCount++;
       }
-    });
+    }
+  }
+
+  // Batch SerpAPI fallback for all failed apps
+  if (failedIndices.length > 0 && process.env.SERPAPI_API_KEY) {
+    const failedTitles = failedIndices.map(idx => enriched[idx].title);
+    console.log(`[app-store] Attempting batch SerpAPI fallback for ${failedTitles.length} failed apps`);
+    try {
+      // Use the first few titles as a combined search query
+      const batchQuery = failedTitles.slice(0, 10).join(" OR ");
+      const serpResults = await searchAppsSerpApiFallback(batchQuery);
+
+      for (const idx of failedIndices) {
+        const app = enriched[idx];
+        const match = serpResults.find(
+          (r) => r.id === app.id || r.title.toLowerCase() === app.title.toLowerCase()
+        );
+        if (match && match.score > 0) {
+          enriched[idx] = {
+            ...enriched[idx],
+            score: match.score,
+            ratings: match.ratings,
+            dataConfidence: "medium",
+          };
+          enrichedCount++;
+          failedCount--;
+          console.log(`[app-store] Batch SerpAPI fallback matched "${app.title}": score=${match.score}, ratings=${match.ratings}`);
+        }
+      }
+    } catch (serpError) {
+      console.warn(
+        `[app-store] Batch SerpAPI fallback failed:`,
+        serpError instanceof Error ? serpError.message : String(serpError)
+      );
+    }
+  }
+
+  if (failedCount > 0) {
+    console.warn(
+      `[app-store] Enrichment summary: ${enrichedCount}/${apps.length} succeeded, ${failedCount} failed`
+    );
   }
 
   return enriched;
 }
 
-/**
- * Search top free apps on the App Store by category.
- * Uses the app-store-scraper npm package as the primary source,
- * with SerpAPI as an optional fallback.
- *
- * The `term` parameter is used as the category for store.list().
- */
 export async function searchApps(term: string): Promise<ScrapedApp[]> {
   type AppStoreApp = {
     id: string | number;
     title: string;
     score: number;
+    ratings: number;
     reviews: number;
     icon: string;
     url: string;
@@ -171,27 +396,46 @@ export async function searchApps(term: string): Promise<ScrapedApp[]> {
     primaryGenre: string;
   };
 
-  const toScrapedApp = (app: AppStoreApp): ScrapedApp => ({
-    id: String(app.id ?? ""),
-    title: app.title ?? "",
-    store: "app_store",
-    genre: app.primaryGenre ?? term,
-    score: Number(app.score ?? 0),
-    ratings: Number(app.reviews ?? 0),
-    installs: estimateInstalls(Number(app.reviews ?? 0)),
-    description: app.description ?? "",
-    icon: app.icon ?? "",
-    url: app.url ?? "",
-    developer: app.developer ?? "",
-  });
+  const toScrapedApp = (app: AppStoreApp): ScrapedApp => {
+    const ratingsCount = Math.max(Number(app.ratings ?? 0), Number(app.reviews ?? 0));
+    return {
+      id: String(app.id ?? ""),
+      title: app.title ?? "",
+      store: "app_store",
+      genre: app.primaryGenre ?? term,
+      score: Number(app.score ?? 0),
+      ratings: ratingsCount,
+      installs: getInstallsLabel(),
+      description: app.description ?? "",
+      icon: app.icon ?? "",
+      url: app.url ?? "",
+      developer: app.developer ?? "",
+      isEstimatedInstalls: false,
+    };
+  };
+
+  // SerpAPI-first: when key is available, use SerpAPI as primary source (more accurate ratings)
+  if (process.env.SERPAPI_API_KEY) {
+    try {
+      console.log(`[app-store] Using SerpAPI as primary source for category "${term}"`);
+      const serpResults = await searchAppsSerpApiFallback(term);
+      if (serpResults.length > 0) {
+        console.log(`[app-store] SerpAPI returned ${serpResults.length} results for category "${term}"`);
+        return serpResults.map(validateScrapedApp);
+      }
+      console.log(`[app-store] SerpAPI returned 0 results for category "${term}", falling back to npm scraper`);
+    } catch (serpError) {
+      console.warn(
+        `[app-store] SerpAPI primary search failed for category "${term}", falling back to npm scraper:`,
+        serpError instanceof Error ? serpError.message : String(serpError)
+      );
+    }
+  }
 
   try {
-    // The app-store-scraper package expects numeric category IDs (e.g. 6007 for Productivity).
-    // Our category values are already stored as numeric strings in APP_STORE_CATEGORIES.
     const categoryId = parseInt(term, 10);
     const categoryParam = isNaN(categoryId) ? term : categoryId;
 
-    // Fetch from both TOP_FREE and TOP_GROSSING collections
     const collections = [
       store.collection.TOP_FREE_IOS,
       store.collection.TOP_GROSSING_IOS,
@@ -210,7 +454,6 @@ export async function searchApps(term: string): Promise<ScrapedApp[]> {
       )
     );
 
-    // Deduplicate by app id
     const deduped = new Map<string, ScrapedApp>();
     for (const result of collectionResults) {
       if (result.status === "fulfilled") {
@@ -229,9 +472,7 @@ export async function searchApps(term: string): Promise<ScrapedApp[]> {
     }
 
     const apps = Array.from(deduped.values());
-
-    // store.list() doesn't return score/reviews — enrich via individual lookups
-    return await enrichAppMetadata(apps);
+    return (await enrichAppMetadata(apps)).map(validateScrapedApp);
   } catch (primaryError) {
     const errorMessage =
       primaryError instanceof Error
@@ -241,23 +482,6 @@ export async function searchApps(term: string): Promise<ScrapedApp[]> {
       `[app-store] Failed to search apps for category "${term}": ${errorMessage}`
     );
 
-    if (process.env.SERPAPI_API_KEY) {
-      console.warn(
-        "[app-store] Falling back to SerpAPI for searchApps..."
-      );
-      try {
-        return await searchAppsSerpApiFallback(term);
-      } catch (fallbackError) {
-        const fallbackMessage =
-          fallbackError instanceof Error
-            ? fallbackError.message
-            : String(fallbackError);
-        console.error(
-          `[app-store] SerpAPI fallback also failed: ${fallbackMessage}`
-        );
-      }
-    }
-
     throw new Error(
       `Failed to search App Store apps for category "${term}": ${errorMessage}`
     );
@@ -266,12 +490,29 @@ export async function searchApps(term: string): Promise<ScrapedApp[]> {
 
 /**
  * Search App Store apps by free-text query.
- * Used by Scout's idea-validation mode to find potential competitors.
+ * SerpAPI-first for all queries (more accurate ratings than npm scraper).
  */
 export async function searchByQuery(
   query: string,
   num: number = 30
 ): Promise<ScrapedApp[]> {
+  // SerpAPI-first for query search
+  if (process.env.SERPAPI_API_KEY) {
+    try {
+      const serpResults = await searchAppsSerpApiFallback(query);
+      if (serpResults.length >= 5) {
+        return serpResults.map(validateScrapedApp);
+      }
+      // If SerpAPI returns few results, supplement with npm scraper
+      console.log(`[app-store] SerpAPI returned only ${serpResults.length} results for query "${query}", supplementing with npm scraper`);
+    } catch (serpError) {
+      console.warn(
+        `[app-store] SerpAPI search failed for query "${query}", falling back to npm scraper:`,
+        serpError instanceof Error ? serpError.message : String(serpError)
+      );
+    }
+  }
+
   try {
     const results = await withRetry(() =>
       store.search({
@@ -287,27 +528,32 @@ export async function searchByQuery(
         title: string;
         score: number;
         reviews: number;
+        ratings?: number;
         icon: string;
         url: string;
         developer: string;
         description: string;
         primaryGenre: string;
-      }): ScrapedApp => ({
-        id: String(app.id ?? ""),
-        title: app.title ?? "",
-        store: "app_store",
-        genre: app.primaryGenre ?? query,
-        score: Number(app.score ?? 0),
-        ratings: Number(app.reviews ?? 0),
-        installs: estimateInstalls(Number(app.reviews ?? 0)),
-        description: app.description ?? "",
-        icon: app.icon ?? "",
-        url: app.url ?? "",
-        developer: app.developer ?? "",
-      })
+      }): ScrapedApp => {
+        const ratingsCount = Math.max(Number(app.ratings ?? 0), Number(app.reviews ?? 0));
+        return {
+          id: String(app.id ?? ""),
+          title: app.title ?? "",
+          store: "app_store",
+          genre: app.primaryGenre ?? query,
+          score: Number(app.score ?? 0),
+          ratings: ratingsCount,
+          installs: getInstallsLabel(),
+          description: app.description ?? "",
+          icon: app.icon ?? "",
+          url: app.url ?? "",
+          developer: app.developer ?? "",
+          isEstimatedInstalls: false,
+        };
+      }
     );
 
-    return await enrichAppMetadata(apps);
+    return (await enrichAppMetadata(apps)).map(validateScrapedApp);
   } catch (primaryError) {
     const errorMessage =
       primaryError instanceof Error
@@ -318,18 +564,12 @@ export async function searchByQuery(
     );
 
     if (process.env.SERPAPI_API_KEY) {
-      console.warn(
-        "[app-store] Falling back to SerpAPI for searchByQuery..."
-      );
       try {
         return await searchAppsSerpApiFallback(query);
       } catch (fallbackError) {
-        const fallbackMessage =
-          fallbackError instanceof Error
-            ? fallbackError.message
-            : String(fallbackError);
         console.error(
-          `[app-store] SerpAPI fallback also failed: ${fallbackMessage}`
+          `[app-store] SerpAPI fallback also failed:`,
+          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
         );
       }
     }
@@ -342,8 +582,6 @@ export async function searchByQuery(
 
 /**
  * Get reviews for a specific App Store app.
- * Uses the app-store-scraper npm package as the primary source,
- * with SerpAPI as an optional fallback.
  */
 export async function getAppReviews(
   appId: string,
@@ -397,18 +635,12 @@ export async function getAppReviews(
     );
 
     if (process.env.SERPAPI_API_KEY) {
-      console.warn(
-        "[app-store] Falling back to SerpAPI for getAppReviews..."
-      );
       try {
         return await getAppReviewsSerpApiFallback(appId, count);
       } catch (fallbackError) {
-        const fallbackMessage =
-          fallbackError instanceof Error
-            ? fallbackError.message
-            : String(fallbackError);
         console.error(
-          `[app-store] SerpAPI fallback also failed: ${fallbackMessage}`
+          `[app-store] SerpAPI fallback also failed:`,
+          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
         );
       }
     }

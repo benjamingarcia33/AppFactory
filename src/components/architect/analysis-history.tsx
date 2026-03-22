@@ -13,6 +13,8 @@ interface AnalysisHistoryProps {
   activeSteps?: AnalysisStep[];
   activeDocuments?: AnalysisDocument[];
   currentStep?: number;
+  connectionLost?: boolean;
+  isGeneratingDocs?: boolean;
 }
 
 export function AnalysisHistory({
@@ -21,6 +23,8 @@ export function AnalysisHistory({
   activeSteps,
   activeDocuments,
   currentStep,
+  connectionLost,
+  isGeneratingDocs,
 }: AnalysisHistoryProps) {
   if (analyses.length === 0) {
     return (
@@ -51,6 +55,8 @@ export function AnalysisHistory({
           activeDocuments={activeDocuments}
           currentStep={currentStep}
           defaultExpanded
+          connectionLost={connectionLost}
+          isGeneratingDocs={isGeneratingDocs}
         />
       )}
       {pastAnalyses.map((analysis) => (

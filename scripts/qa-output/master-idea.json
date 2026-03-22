@@ -1,0 +1,505 @@
+{
+  "name": "GlowLog",
+  "tagline": "Your skin's smartest diary — track, analyze, and glow with confidence.",
+  "description": "GlowLog is a skincare logging and routine tracker built for real people who want to understand what actually works for their skin. Unlike competitors that lock core features behind aggressive paywalls or ship buggy, half-finished products, GlowLog leads with a generous free tier and a rock-solid logging experience — letting users build routines, track products, and journal their skin journey without hitting a paywall every five minutes.\n\nWhat sets GlowLog apart is its intelligent routine scheduling engine: users can set routines to repeat on custom cycles (every 3 days, twice a week, alternating AM/PM), view a calendar heatmap of past usage, and get smart reminders that adapt to their actual habits. A built-in ingredient compatibility layer flags conflicts and explains why — no black-box warnings — while a timeline chart connects product changes to visible skin improvements over time.\n\nGlowLog is designed for the skincare-curious who are tired of apps that promise science and deliver frustration. It's clean, reliable, and honest about what it costs — with a one-time purchase option alongside a modest subscription, because users have made it clear they want a choice.",
+  "coreFeatures": [
+    {
+      "name": "Custom Routine Scheduling & Cycle Planner",
+      "description": "Users can schedule routines to repeat on specific cycles — every N days, certain weekdays, or alternating AM/PM — with a full calendar view showing past usage, upcoming steps, and streak history at a glance.",
+      "addressesFlaws": [
+        "[critical] Cannot schedule routines themselves to repeat on specific cycles",
+        "[high] Calendar view showing past product usage and next usage dates at a glance",
+        "[high] Ability to schedule routines to repeat on specific cycles"
+      ],
+      "evidenceAppIds": [
+        "1526044677",
+        "1571959428"
+      ],
+      "priority": "critical"
+    },
+    {
+      "name": "Skin Timeline & Progress Analytics",
+      "description": "A visual chart system that maps journal entries, product introductions, and skin condition ratings over time — letting users see correlations between routine changes and skin improvements with annotated milestones.",
+      "addressesFlaws": [
+        "[medium] Chart system tracking journal entries changes over time",
+        "[medium] Skincare-focused analytics and visualizations by product type/category",
+        "Photo comparison and selfie log improvements"
+      ],
+      "evidenceAppIds": [
+        "1526044677",
+        "1385561364",
+        "1571959428"
+      ],
+      "priority": "critical"
+    },
+    {
+      "name": "Transparent Ingredient Compatibility Engine",
+      "description": "Scans product ingredient lists and flags conflicts with plain-language explanations (not just red/green icons). Users can override flagged incompatibilities with a manual override — because they know their skin best.",
+      "addressesFlaws": [
+        "[high] Allow users to manually add products they prefer even if flagged as incompatible",
+        "[medium] Add product pairing and ingredient combination recommendations",
+        "Takes mystery out of product conflicts"
+      ],
+      "evidenceAppIds": [
+        "1428570992",
+        "1385561364",
+        "6443494117"
+      ],
+      "priority": "critical"
+    },
+    {
+      "name": "Flexible One-Time Purchase + Optional Subscription",
+      "description": "Offers a meaningful free tier, a one-time unlock for core features, and an optional subscription for premium perks — directly addressing the #1 complaint across every competitor: aggressive paywalls and subscription-only models.",
+      "addressesFlaws": [
+        "[major] Lack of one-time purchase option, subscription-only model",
+        "[critical] Extensive paywall and premium features limitation",
+        "[critical] Paywall and subscription required for core functionality",
+        "Misleading free trial and hidden subscription costs"
+      ],
+      "evidenceAppIds": [
+        "1526044677",
+        "1385561364",
+        "6449196562",
+        "1480983279"
+      ],
+      "priority": "critical"
+    },
+    {
+      "name": "Customizable Navigation & Routine Icons",
+      "description": "Users can personalize their navigation bar with quick-access shortcuts to their most-used lists, routines, and features — plus assign custom icons or photos to routines instead of preset images.",
+      "addressesFlaws": [
+        "[high] Customizable navigation bar icons for quick access to lists and features",
+        "[medium] Option to use custom photos instead of preset images for routines",
+        "[medium] Icons for routines and lists"
+      ],
+      "evidenceAppIds": [
+        "1526044677",
+        "1571959428"
+      ],
+      "priority": "high"
+    },
+    {
+      "name": "Broad & Crowdsourced Product Database with Barcode Scan",
+      "description": "Launches with a curated multi-brand database and allows users to add custom products via barcode scan or manual entry. Community submissions are moderated and merged — avoiding the stale, brand-limited databases that plague competitors.",
+      "addressesFlaws": [
+        "[high] Product database expansion beyond The Ordinary brand",
+        "[critical] Poor product library and missing major product lines",
+        "[high] More products from popular brands in the database",
+        "[major] Limited product database"
+      ],
+      "evidenceAppIds": [
+        "1428570992",
+        "1385561364",
+        "6475258897",
+        "6478040418",
+        "6443494117"
+      ],
+      "priority": "high"
+    },
+    {
+      "name": "Reliable Data Persistence & Offline-First Architecture",
+      "description": "All routine data, journal entries, and product logs are saved locally first and synced to cloud — eliminating the data loss and progress-reset bugs that are the most common 1-star triggers across competitors.",
+      "addressesFlaws": [
+        "[critical] Photo settings bugs and product data not persisting",
+        "[major] App progress not saved during routine building",
+        "Streak counter reset bug"
+      ],
+      "evidenceAppIds": [
+        "1571959428",
+        "1385561364",
+        "6475258897"
+      ],
+      "priority": "high"
+    }
+  ],
+  "competitorFlaws": [
+    {
+      "competitorAppId": "1480983279",
+      "competitorName": "Charm: Skincare Routine 360°",
+      "flaws": [
+        "Misleading free trial and hidden subscription costs causing user distrust",
+        "App glitchiness and technical issues undermining core experience"
+      ],
+      "featureGaps": [
+        "No custom routine scheduling or cycle-based reminders",
+        "No ingredient compatibility engine",
+        "No skin timeline analytics"
+      ],
+      "strengths": [
+        "Clear skin results reported by users",
+        "Organized and neat interface",
+        "Helpful reminders",
+        "Effective skincare guidance for beginners"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.50918,
+        "ratings": 1471
+      }
+    },
+    {
+      "competitorAppId": "1428570992",
+      "competitorName": "Skincare Routine",
+      "flaws": [
+        "Limited product database focused heavily on The Ordinary brand",
+        "Cluttered and confusing UI with years of neglected updates"
+      ],
+      "featureGaps": [
+        "No routine scheduling or cycle planner",
+        "No skin progress timeline or analytics",
+        "No calendar view of past usage"
+      ],
+      "strengths": [
+        "Excellent product conflict detection",
+        "Automatic layering suggestions",
+        "Tracks product cost and ROI",
+        "Responsive developer"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.55217,
+        "ratings": 623
+      }
+    },
+    {
+      "competitorAppId": "1571959428",
+      "competitorName": "Skincare Routine: BasicBeauty",
+      "flaws": [
+        "Excessive paywall — basic functionality locked behind mandatory pro subscription",
+        "Critical bugs: photo settings and product data not persisting",
+        "Limited pre-populated product database"
+      ],
+      "featureGaps": [
+        "No custom routine cycle scheduling",
+        "No ingredient compatibility explanations",
+        "No skin analytics or timeline charts"
+      ],
+      "strengths": [
+        "Cute and sleek design",
+        "Streak feature for motivation",
+        "Multi-category tracking including hair and meds",
+        "Progress photo tracking with tags",
+        "UV index integration"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.67318,
+        "ratings": 563
+      }
+    },
+    {
+      "competitorAppId": "1385561364",
+      "competitorName": "Skin Bliss: Skincare Routines",
+      "flaws": [
+        "Extensive paywall blocking nearly all meaningful features",
+        "Poor and inaccurate product library missing major brands",
+        "Inaccurate skin analysis and recommendations",
+        "Poor customer support",
+        "Billing and subscription issues",
+        "App progress not saved during routine building"
+      ],
+      "featureGaps": [
+        "Cannot manually override incompatible product flags",
+        "No routine cycle scheduling",
+        "No skin timeline analytics",
+        "No calendar heatmap view"
+      ],
+      "strengths": [
+        "Insightful ingredient analysis concept",
+        "Good layout with multiple routine support",
+        "Photo journal feature",
+        "Helpful for skincare beginners"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.70356,
+        "ratings": 759
+      }
+    },
+    {
+      "competitorAppId": "1526044677",
+      "competitorName": "Skincare Routine: FeelinMySkin",
+      "flaws": [
+        "Core logging features locked behind paid subscription",
+        "Cannot schedule routines on specific repeat cycles — the most-requested feature",
+        "Missing ability to reorder lists and products",
+        "Misleading feature descriptions",
+        "No one-time purchase option"
+      ],
+      "featureGaps": [
+        "No calendar view of past product usage",
+        "No customizable navigation bar",
+        "No chart system for tracking skin changes over time",
+        "No cycle-based routine scheduling"
+      ],
+      "strengths": [
+        "Comprehensive product database including indie and international brands",
+        "Custom product addition",
+        "Community features and product reviews",
+        "Product expiration tracking",
+        "Product rotation features",
+        "Responsive developers",
+        "Clean design",
+        "No ads"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.65421,
+        "ratings": 214
+      }
+    },
+    {
+      "competitorAppId": "6478040418",
+      "competitorName": "SkinSort - Skincare Scanner",
+      "flaws": [
+        "Aggressive monetization and paywall popups disrupting UX",
+        "App bugs and performance issues",
+        "Limited and inaccurate product matching algorithm",
+        "Excessive notifications"
+      ],
+      "featureGaps": [
+        "No routine scheduling or cycle planner",
+        "No skin progress timeline",
+        "No calendar view of usage history"
+      ],
+      "strengths": [
+        "Indispensable ingredient scanning and compatibility ratings",
+        "Detailed ingredient information",
+        "Customizable product organization",
+        "Excellent customer support",
+        "Multi-price range product recommendations"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.72923,
+        "ratings": 4081
+      }
+    },
+    {
+      "competitorAppId": "6475258897",
+      "competitorName": "Skincare Routine Planner",
+      "flaws": [
+        "Time zone bugs locking users out of the app while traveling",
+        "Subscription verification failures",
+        "App freezing and lagging",
+        "Streak counter reset bug",
+        "Aggressive free trial pushes"
+      ],
+      "featureGaps": [
+        "No ingredient compatibility engine",
+        "No skin analytics or timeline",
+        "No cycle-based scheduling"
+      ],
+      "strengths": [
+        "Easy routine setup and tracking",
+        "Helpful reminder notifications",
+        "Photo tracking without cluttering camera roll",
+        "Custom product addition",
+        "Beautiful interface",
+        "Responsive developer support"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.62,
+        "ratings": 100
+      }
+    },
+    {
+      "competitorAppId": "6449196562",
+      "competitorName": "Skan - AI Skincare and Beauty",
+      "flaws": [
+        "Core functionality entirely paywalled from launch",
+        "Frequent app crashes and freezing",
+        "Privacy concerns and data selling allegations",
+        "Limited product recommendations"
+      ],
+      "featureGaps": [
+        "No routine scheduling",
+        "No ingredient transparency or override",
+        "No skin timeline or analytics"
+      ],
+      "strengths": [
+        "Easy to use interface concept",
+        "AI-driven personalization angle"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.76247,
+        "ratings": 2025
+      }
+    },
+    {
+      "competitorAppId": "6443494117",
+      "competitorName": "Stilla: Skincare Scanner",
+      "flaws": [
+        "Limited product database with many missing items",
+        "Shift to paid subscription model alienating existing free users",
+        "Database relies on user submissions with no proactive team curation"
+      ],
+      "featureGaps": [
+        "No product pairing or ingredient combination recommendations",
+        "No routine scheduling or cycle planner",
+        "No skin progress timeline"
+      ],
+      "strengths": [
+        "Beautiful and sleek interface",
+        "Clear ingredient breakdown",
+        "Ingredient-to-concern mapping",
+        "Siri integration",
+        "Customizable routines for different skin phases",
+        "Affordable subscription pricing"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.49725,
+        "ratings": 364
+      }
+    },
+    {
+      "competitorAppId": "6748936998",
+      "competitorName": "Routinely: Clear Skin Coach",
+      "flaws": [
+        "App crashes during photo analysis — the core feature",
+        "Photo rejection bugs preventing skin analysis",
+        "Slow product loading times",
+        "Missing popular products in database",
+        "Confusing navigation"
+      ],
+      "featureGaps": [
+        "No routine cycle scheduling",
+        "No calendar heatmap of usage",
+        "No one-time purchase option"
+      ],
+      "strengths": [
+        "AI-generated personalized routines",
+        "Product scanner for skin-safe identification",
+        "Skin progress tracking over time",
+        "Daily reminder notifications",
+        "Ingredient health scores"
+      ],
+      "marketData": {
+        "installs": "N/A",
+        "rating": 4.68037,
+        "ratings": 219
+      }
+    }
+  ],
+  "uniqueValueProps": [
+    "The only skincare app offering true cycle-based routine scheduling (every N days, specific weekdays) with a calendar heatmap — the most-requested missing feature across the category",
+    "Transparent ingredient compatibility with plain-English explanations and user override — no black-box warnings",
+    "Honest monetization: meaningful free tier plus a one-time purchase option, directly addressing the #1 complaint across all 10 competitors",
+    "Offline-first architecture ensuring zero data loss — eliminating the most common 1-star review trigger in the category",
+    "Skin timeline analytics that visually connect product changes to skin condition improvements over time"
+  ],
+  "targetAudience": "Skincare enthusiasts aged 18–35 (skewing female) who maintain multi-step routines, are ingredient-aware, and have been burned by buggy or paywalled apps. Includes beginners building their first routine and intermediate users managing active ingredients like retinoids and acids. Secondary audience: acne-prone users tracking triggers and treatment progress.",
+  "marketOpportunity": "The 12 competitors analyzed have a combined ~10,500 ratings on the App Store. Assuming a 1–3% review rate, this suggests roughly 350,000–1,050,000 total installs across the category. The top 3 apps by rating count (SkinSort at 4,081, Skan at 2,025, Skin Bliss at 759) indicate a healthy but fragmented market with no dominant player. A well-executed GlowLog targeting the most vocal pain points (paywalls, missing scheduling, data loss) could realistically capture 5,000–15,000 users in year one — enough to generate $2,500–$9,000 ARR at $5–$8/month conversion from 5–10% of free users, or $15,000–$30,000 ARR with a one-time purchase at $9.99 converting 3–5% of installs.",
+  "estimatedDifficulty": "medium",
+  "confidenceScore": 72,
+  "difficultyBreakdown": {
+    "technicalComplexity": "medium",
+    "timeToMvp": "4–5 months for a solo developer working part-time; 2–3 months full-time",
+    "teamSize": "1 person",
+    "keyTechnicalChallenges": [
+      "Building a reliable offline-first local database with cloud sync (CoreData + CloudKit or SQLite + Supabase)",
+      "Implementing cycle-based scheduling logic with accurate local notifications across time zones",
+      "Ingredient compatibility matching — requires curating or licensing an ingredient database (Open Beauty Facts is free)",
+      "Barcode scanning and product lookup integration (Open Food Facts / Open Beauty Facts APIs)",
+      "Photo journaling with efficient local storage and optional cloud backup without ballooning storage costs"
+    ],
+    "requiredExpertise": [
+      "iOS/Swift or React Native development",
+      "Local database design (CoreData, SQLite, or Realm)",
+      "REST API integration for product/ingredient databases",
+      "Basic data visualization (charts for skin timeline)",
+      "App Store submission and subscription/IAP implementation via StoreKit"
+    ]
+  },
+  "feasibilityAssessment": {
+    "isRealistic": true,
+    "score": 71,
+    "reasoning": "This is a well-scoped app for a solo developer. The core features — routine logging, scheduling, journaling, photo tracking — are standard CRUD with local notifications, well within one person's capability. The ingredient compatibility engine is the hardest piece but is made tractable by Open Beauty Facts (free, open-source ingredient database with 2M+ products). The main risks are scope creep (trying to build AI skin analysis on day one) and the product database cold-start problem. Staying disciplined to MVP scope makes this very buildable.",
+    "majorBlockers": [
+      "Product database cold-start: launching with a thin database will frustrate early users — must integrate Open Beauty Facts from day one",
+      "Ingredient compatibility accuracy: incorrect conflict warnings will destroy trust; requires careful curation and clear confidence indicators",
+      "Time zone notification bugs (seen in competitors) require careful testing across locales",
+      "App Store review for health-adjacent apps can be slow; avoid making medical claims"
+    ],
+    "costEstimate": "$500–$2,500 for MVP. Breakdown: Apple Developer account $99/year, Supabase free tier for cloud sync (free up to 500MB), Open Beauty Facts API (free/open-source), RevenueCat free tier for IAP management (free up to $2,500 MRR), design assets via Figma Community (free). Optional: $200–$500 for TestFlight beta testers via platforms like Testflight.io or Reddit communities."
+  },
+  "marketViability": {
+    "score": 68,
+    "willMakeDifference": true,
+    "reasoning": "The skincare app category has real, vocal demand — users are actively leaving reviews begging for cycle scheduling, better databases, and fair pricing. No current competitor has nailed all three simultaneously. GlowLog's combination of honest monetization, cycle scheduling, and offline reliability directly addresses the top complaints across 10 apps. The risk is that this is a lifestyle/habit app with moderate retention challenges — users who achieve their skin goals may churn. The one-time purchase model helps reduce churn pressure. Organic growth via skincare communities (Reddit r/SkincareAddiction, TikTok, Instagram) is highly viable given the passionate, sharing-oriented user base.",
+    "revenueModel": "Freemium with one-time unlock ($7.99–$9.99 for lifetime core features) + optional GlowLog Pro subscription ($4.99/month or $29.99/year) for advanced analytics, unlimited photo storage, and AI insights. This directly addresses the #1 competitor complaint while still monetizing.",
+    "userAcquisitionStrategy": "Organic-first: post before/after routine tracking screenshots on r/SkincareAddiction and r/tretinoin (combined 5M+ members); create TikTok/Reels content showing the cycle scheduler and ingredient compatibility features; reach out to micro-influencer skincare creators (10K–100K followers) for free app access in exchange for honest reviews; App Store optimization targeting 'skincare routine tracker', 'acne tracker', and 'ingredient checker' keywords where competitors have weak review velocity.",
+    "competitiveAdvantageType": "ux"
+  },
+  "aiRecommendation": {
+    "verdict": "yes",
+    "summary": "GlowLog is a solid indie app opportunity with a clear, evidence-backed feature gap to exploit: cycle-based routine scheduling is the single most-requested missing feature across the category, and no competitor has built it well. Combined with honest monetization and offline reliability, there's a genuine reason for users to switch. The market is fragmented enough that a well-executed niche player can carve out 5,000–15,000 loyal users. This is not a moonshot — it's a disciplined execution play. The main risk is scope creep and the temptation to add AI skin analysis before nailing the basics. Build the scheduler and the logging experience first; everything else is secondary.",
+    "warnings": [
+      "Do NOT build AI skin analysis for MVP — it's technically hard, legally risky (health claims), and the source of the most 1-star reviews in the category (Routinely, Skan). Add it in v2 if at all.",
+      "The product database is a make-or-break factor — launch with Open Beauty Facts integration on day one, not a hand-curated list of 200 products.",
+      "Avoid the subscription-only trap that has destroyed goodwill for every competitor — the one-time purchase option is a genuine differentiator, not just a nice-to-have.",
+      "Skincare is a retention-risk category: users who 'solve' their skin may stop logging. Build habit-forming streaks and milestone celebrations to extend engagement.",
+      "Time zone notification bugs have caused critical reviews for at least two competitors — test notification scheduling across time zones before launch, not after."
+    ],
+    "goNoGoFactors": [
+      {
+        "factor": "Unmet Feature Demand",
+        "assessment": "go",
+        "explanation": "Cycle-based routine scheduling is explicitly requested in multiple competitor reviews and completely absent from the market. This is a rare, concrete, buildable gap — not a vague 'do it better' opportunity."
+      },
+      {
+        "factor": "Monetization Differentiation",
+        "assessment": "go",
+        "explanation": "Aggressive paywalls are the #1 complaint across the entire category. A one-time purchase option is a genuine competitive moat that costs nothing to implement and directly converts frustrated competitor users."
+      },
+      {
+        "factor": "Technical Feasibility for Solo Dev",
+        "assessment": "go",
+        "explanation": "Core features (CRUD logging, local notifications, cycle scheduling, barcode scan via Open Beauty Facts) are well within a solo iOS developer's capability in 4–5 months. No exotic infrastructure required."
+      },
+      {
+        "factor": "Market Size for Indie App",
+        "assessment": "caution",
+        "explanation": "The addressable market is real but modest — estimated 350K–1M total category installs. Capturing 1–3% is achievable but won't make anyone rich quickly. This is a sustainable side-income app, not a venture-scale business."
+      },
+      {
+        "factor": "Retention & Habit Formation",
+        "assessment": "caution",
+        "explanation": "Skincare logging is a habit app — users who achieve clear skin may stop using it. Without strong streak mechanics, community features, or ongoing value (ingredient alerts, new product tracking), churn could be high after 3–6 months."
+      },
+      {
+        "factor": "Competitive Intensity",
+        "assessment": "caution",
+        "explanation": "10+ active competitors exist, several with 1,000–4,000+ ratings. While none dominates, the category is crowded enough that App Store discoverability will require consistent ASO effort and community marketing from day one."
+      }
+    ]
+  },
+  "originalIdea": "GlowLog - a skincare logging and routine tracking app",
+  "searchStrategy": {
+    "queries": [
+      "skincare routine tracker",
+      "skincare log app",
+      "GlowLog",
+      "skin care diary",
+      "beauty routine tracker",
+      "skincare journal",
+      "face care tracker",
+      "skin health tracker",
+      "acne tracker app",
+      "skincare ingredient tracker",
+      "beauty log",
+      "skin condition tracker",
+      "daily skincare routine",
+      "cosmetic routine planner",
+      "skin care regimen app"
+    ],
+    "categories": [
+      "6013",
+      "6012"
+    ],
+    "reasoning": "GlowLog sits at the intersection of Health & Fitness and Lifestyle categories. Queries span direct competitor names, feature-based searches (logging, tracking, routine), problem-based searches (acne, skin condition), and adjacent solutions (beauty diary, cosmetic planner). This ensures broad coverage of both dedicated skincare apps and general beauty/wellness trackers that compete for the same user base. Filters reflect a mainstream audience with moderate engagement expectations, as skincare apps have grown significantly but remain somewhat niche compared to general fitness apps."
+  }
+}

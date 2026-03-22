@@ -6,6 +6,8 @@ import { ScanControls } from "@/components/scout/scan-controls";
 import { ScanProgress } from "@/components/scout/scan-progress";
 import { ScanHistory } from "@/components/scout/scan-history";
 import { BlueOceanCard } from "@/components/scout/blue-ocean-card";
+import { MasterIdeaCard } from "@/components/scout/master-idea-card";
+import { ScoutExecutiveSummary } from "@/components/scout/scout-executive-summary";
 import { getScans } from "@/actions/scout-actions";
 import type {
   AppStore,
@@ -15,7 +17,19 @@ import type {
   ScoutFilterSettings,
   GapAnalysis,
   BlueOceanResult,
+  MasterIdea,
+  ScoutMode,
 } from "@/lib/types";
+
+interface ScanParams {
+  store: AppStore;
+  mode: ScoutMode;
+  ideaText?: string;
+  category?: string;
+  categoryLabel?: string;
+  focusText?: string | null;
+  advancedFilters: ScoutFilterSettings | null;
+}
 
 export default function ScoutPage() {
   const [scans, setScans] = useState<Scan[]>([]);
@@ -31,15 +45,11 @@ export default function ScoutPage() {
   });
   const [gapAnalysis, setGapAnalysis] = useState<GapAnalysis | null>(null);
   const [blueOcean, setBlueOcean] = useState<BlueOceanResult | null>(null);
+  const [masterIdea, setMasterIdea] = useState<MasterIdea | null>(null);
+  const [lastCompletedScanId, setLastCompletedScanId] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
-  const scanParamsRef = useRef<{
-    store: AppStore;
-    category: string;
-    filters: ScoutFilterSettings;
-    mode?: "category" | "idea";
-    ideaText?: string;
-  } | null>(null);
+  const scanParamsRef = useRef<ScanParams | null>(null);
 
   // Load existing scans on mount
   useEffect(() => {
@@ -77,17 +87,22 @@ export default function ScoutPage() {
             setScans((prev) => {
               const exists = prev.some((s) => s.id === data.scanId);
               if (exists) return prev;
+              const params = scanParamsRef.current;
               const newScan: Scan = {
                 id: data.scanId,
-                store: scanParamsRef.current?.store ?? "google_play",
-                category: scanParamsRef.current?.category ?? "",
+                store: params?.store ?? "google_play",
+                category: params?.category ?? (params?.mode === "discovery" ? "" : "synthesis"),
                 status: "running",
                 totalAppsScraped: 0,
                 totalOpportunities: 0,
                 createdAt: new Date().toISOString(),
                 completedAt: null,
-                mode: scanParamsRef.current?.mode ?? "category",
-                ideaText: scanParamsRef.current?.ideaText ?? null,
+                mode: params?.mode ?? "synthesis",
+                ideaText: params?.ideaText ?? null,
+                masterIdea: null,
+                blueOcean: null,
+                focusText: params?.focusText ?? null,
+                discoveryAngle: null,
               };
               return [newScan, ...prev];
             });
@@ -130,9 +145,32 @@ export default function ScoutPage() {
             }));
             break;
 
+          case "search_strategy":
+            setProgress((prev) => ({
+              ...prev,
+              stage: "search_strategy",
+              message: `AI search strategy: ${data.strategy.queries.length} queries, ${data.strategy.categories.length} categories`,
+            }));
+            break;
+
+          case "discovery_angle":
+            // Persist the angle on the scan in the scans list
+            setScans((prev) =>
+              prev.map((s) =>
+                s.id === activeScanId
+                  ? { ...s, discoveryAngle: data.angle }
+                  : s
+              )
+            );
+            setProgress((prev) => ({
+              ...prev,
+              stage: "discovery_angle",
+              message: `AI discovered angle: ${data.angle}`,
+            }));
+            break;
+
           case "gap_analysis":
             setGapAnalysis(data.gapAnalysis);
-            // Update existing opportunities with gap analysis
             setActiveOpportunities((prev) =>
               prev.map((opp) => ({
                 ...opp,
@@ -148,12 +186,19 @@ export default function ScoutPage() {
 
           case "blue_ocean":
             setBlueOcean(data.blueOcean);
-            // Update existing opportunities with blue ocean
             setActiveOpportunities((prev) =>
               prev.map((opp) => ({
                 ...opp,
                 blueOcean: data.blueOcean,
               }))
+            );
+            // Persist blueOcean on the scan object in the scans list
+            setScans((prev) =>
+              prev.map((s) =>
+                s.id === activeScanId
+                  ? { ...s, blueOcean: data.blueOcean }
+                  : s
+              )
             );
             setProgress((prev) => ({
               ...prev,
@@ -164,8 +209,32 @@ export default function ScoutPage() {
             }));
             break;
 
+          case "master_idea":
+            setMasterIdea(data.masterIdea);
+            // Also persist masterIdea on the scan object in the scans list
+            setScans((prev) =>
+              prev.map((s) =>
+                s.id === activeScanId
+                  ? { ...s, masterIdea: data.masterIdea }
+                  : s
+              )
+            );
+            setProgress((prev) => ({
+              ...prev,
+              stage: "synthesis",
+              message: `Master Idea synthesized: ${data.masterIdea.name}`,
+            }));
+            break;
+
+          case "master_idea_error":
+            setProgress((prev) => ({
+              ...prev,
+              stage: "synthesis_warning",
+              message: data.message,
+            }));
+            break;
+
           case "complete":
-            // Update the scan in the list
             setScans((prev) =>
               prev.map((s) =>
                 s.id === data.scanId
@@ -178,12 +247,15 @@ export default function ScoutPage() {
                   : s
               )
             );
+            setLastCompletedScanId(data.scanId);
             setIsScanning(false);
             setActiveScanId(null);
-            setActiveOpportunities([]);
+            // Don't clear activeOpportunities here — they are needed by
+            // MasterIdeaCard and ScanHistory. They will be cleared when the
+            // NEXT scan starts (in handleStartScan).
             setProgress({
               stage: "complete",
-              message: `Scan complete. Found ${data.totalOpportunities} opportunities.`,
+              message: `Scan complete. Found ${data.totalOpportunities} competitors.`,
               progress: 100,
             });
             eventSource.close();
@@ -207,6 +279,8 @@ export default function ScoutPage() {
             setActiveOpportunities([]);
             setGapAnalysis(null);
             setBlueOcean(null);
+            setMasterIdea(null);
+            setLastCompletedScanId(null);
             setProgress({
               stage: "cancelled",
               message: "Scan was cancelled.",
@@ -233,6 +307,8 @@ export default function ScoutPage() {
             setActiveOpportunities([]);
             setGapAnalysis(null);
             setBlueOcean(null);
+            setMasterIdea(null);
+            setLastCompletedScanId(null);
             setProgress({
               stage: "error",
               message: `Error: ${data.message}`,
@@ -244,8 +320,6 @@ export default function ScoutPage() {
         }
       };
 
-      // Don't reconnect on error — reconnecting hits /api/scout/stream which
-      // starts a BRAND NEW pipeline run, causing duplicate scans.
       eventSource.onerror = () => {
         eventSource.close();
         eventSourceRef.current = null;
@@ -259,64 +333,77 @@ export default function ScoutPage() {
         });
       };
     },
-    // activeScanId is read inside the error handler but we capture it via closure
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
+  const resetScanState = useCallback(() => {
+    setIsScanning(true);
+    setActiveOpportunities([]);
+    setGapAnalysis(null);
+    setBlueOcean(null);
+    setMasterIdea(null);
+    setLastCompletedScanId(null);
+  }, []);
+
   const handleStartScan = useCallback(
-    (store: AppStore, category: string, filters: ScoutFilterSettings) => {
-      setIsScanning(true);
-      setActiveOpportunities([]);
-      setGapAnalysis(null);
-      setBlueOcean(null);
+    (store: AppStore, ideaText: string, advancedFilters: ScoutFilterSettings | null) => {
+      resetScanState();
       setProgress({
         stage: "starting",
-        message: "Initializing scan...",
+        message: "Initializing synthesis pipeline...",
         progress: 0,
       });
-      scanParamsRef.current = { store, category, filters, mode: "category" };
-
-      const params = new URLSearchParams({ store, category, mode: "category" });
-      if (filters) {
-        params.set("minInstalls", String(filters.minInstalls));
-        params.set("maxRating", String(filters.maxRating));
-        params.set("minRatings", String(filters.minRatings));
-      }
-      connectEventSource(`/api/scout/stream?${params.toString()}`);
-    },
-    [connectEventSource]
-  );
-
-  const handleStartIdeaScan = useCallback(
-    (store: AppStore, ideaText: string, filters: ScoutFilterSettings) => {
-      setIsScanning(true);
-      setActiveOpportunities([]);
-      setGapAnalysis(null);
-      setBlueOcean(null);
-      setProgress({
-        stage: "starting",
-        message: "Analyzing your app idea...",
-        progress: 0,
-      });
-      scanParamsRef.current = { store, category: "idea-validation", filters, mode: "idea", ideaText };
+      scanParamsRef.current = { store, mode: "synthesis", ideaText, advancedFilters };
 
       const params = new URLSearchParams({
         store,
-        mode: "idea",
+        mode: "synthesis",
         ideaText,
       });
-      params.set("minInstalls", String(filters.minInstalls));
-      params.set("maxRating", String(filters.maxRating));
-      params.set("minRatings", String(filters.minRatings));
+      if (advancedFilters) {
+        params.set("advancedFilters", "true");
+        params.set("minInstalls", String(advancedFilters.minInstalls));
+        params.set("maxRating", String(advancedFilters.maxRating));
+        params.set("minRatings", String(advancedFilters.minRatings));
+      }
       connectEventSource(`/api/scout/stream?${params.toString()}`);
     },
-    [connectEventSource]
+    [connectEventSource, resetScanState]
+  );
+
+  const handleStartDiscovery = useCallback(
+    (store: AppStore, category: string, categoryLabel: string, focusText: string | null, advancedFilters: ScoutFilterSettings | null) => {
+      resetScanState();
+      setProgress({
+        stage: "starting",
+        message: `Initializing discovery in ${categoryLabel}...`,
+        progress: 0,
+      });
+      scanParamsRef.current = { store, mode: "discovery", category, categoryLabel, focusText, advancedFilters };
+
+      const params = new URLSearchParams({
+        store,
+        mode: "discovery",
+        category,
+        categoryLabel,
+      });
+      if (focusText) {
+        params.set("focusText", focusText);
+      }
+      if (advancedFilters) {
+        params.set("advancedFilters", "true");
+        params.set("minInstalls", String(advancedFilters.minInstalls));
+        params.set("maxRating", String(advancedFilters.maxRating));
+        params.set("minRatings", String(advancedFilters.minRatings));
+      }
+      connectEventSource(`/api/scout/stream?${params.toString()}`);
+    },
+    [connectEventSource, resetScanState]
   );
 
   const handleCancel = useCallback(async () => {
     if (!activeScanId) return;
-    // Optimistic UI update — don't wait for SSE event
     setIsScanning(false);
     setScans((prev) =>
       prev.map((s) =>
@@ -347,18 +434,20 @@ export default function ScoutPage() {
     setActiveOpportunities([]);
     setGapAnalysis(null);
     setBlueOcean(null);
+    setMasterIdea(null);
+    setLastCompletedScanId(null);
   }, [activeScanId]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Scout"
-        description="Discover app opportunities by analyzing top-rated apps with dissatisfied users, or validate your own app idea"
+        description="Describe your app idea or explore a category to find opportunities, analyze competitors, and synthesize a unique Master Idea"
       />
 
       <ScanControls
         onStartScan={handleStartScan}
-        onStartIdeaScan={handleStartIdeaScan}
+        onStartDiscovery={handleStartDiscovery}
         onCancel={handleCancel}
         isScanning={isScanning}
       />
@@ -375,8 +464,26 @@ export default function ScoutPage() {
         }
       />
 
-      {blueOcean && (
-        <BlueOceanCard blueOcean={blueOcean} />
+      {blueOcean && !masterIdea && (activeScanId || lastCompletedScanId) && (
+        <BlueOceanCard
+          blueOcean={blueOcean}
+          scanId={(activeScanId ?? lastCompletedScanId)!}
+        />
+      )}
+
+      {masterIdea && (activeScanId || lastCompletedScanId) && (
+        <>
+          <ScoutExecutiveSummary
+            masterIdea={masterIdea}
+            scanId={(activeScanId ?? lastCompletedScanId)!}
+          />
+          <MasterIdeaCard
+            masterIdea={masterIdea}
+            scanId={(activeScanId ?? lastCompletedScanId)!}
+            opportunities={activeOpportunities}
+            hideExecutiveSummary
+          />
+        </>
       )}
 
       <ScanHistory

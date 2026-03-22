@@ -45,9 +45,9 @@ export function AnalysisStepCard({ step }: AnalysisStepCardProps) {
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                 step.status === "completed"
-                  ? "bg-green-500/10 text-green-600"
+                  ? "bg-green-500/10 text-green-400"
                   : step.status === "running"
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-primary/10 text-primary animate-pulse"
                     : step.status === "failed"
                       ? "bg-destructive/10 text-destructive"
                       : "bg-muted text-muted-foreground"
@@ -71,7 +71,7 @@ export function AnalysisStepCard({ step }: AnalysisStepCardProps) {
 
       {step.status === "completed" && step.content && (
         <CardContent className="pt-0">
-          <div className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+          <div className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap bg-surface-0 rounded-md p-2">
             {expanded ? step.content : truncatedContent}
           </div>
           {step.content.length > 200 && (

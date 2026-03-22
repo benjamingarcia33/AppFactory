@@ -1,0 +1,179 @@
+{
+  "personas": [
+    {
+      "name": "Marcus, The Career Climber",
+      "profile": "28-year-old mid-level marketing manager at a mid-size tech firm. Preparing for a director-level promotion that requires presenting to the C-suite quarterly. Uses LinkedIn daily, listens to career podcasts, and has tried Orai but abandoned it after hitting a paywall before seeing any real value. iOS user, spends $30–60/month on productivity apps.",
+      "frustrations": [
+        "Orai locked core feedback behind a $99/year wall before he could evaluate it",
+        "Passive recording tools don't simulate the pressure of real executive Q&A",
+        "Generic feedback like 'speak slower' doesn't tell him what specifically to fix",
+        "No app has ever made him feel genuinely challenged the way a tough interviewer would"
+      ],
+      "goals": [
+        "Nail his next C-suite presentation without freezing under hostile questions",
+        "Build composure and quick-thinking reflexes for high-stakes moments",
+        "Track measurable improvement over 8–12 weeks to justify the time investment",
+        "Find a tool he can trust not to scam him with hidden charges"
+      ],
+      "willingnessToPay": "$12–18/month for a premium tier after a meaningful free trial; would pay annually ($120–150) if ROI is clear within 30 days"
+    },
+    {
+      "name": "Priya, The Ambitious Job Seeker",
+      "profile": "24-year-old recent MBA graduate actively interviewing at consulting firms and startups. Technically strong but self-aware about stumbling under pressure interview questions. Spends 2–3 hours/day on interview prep. Has tried YouTube mock interviews and Credible but felt Credible's paywall appeared before she could assess its value. Budget-conscious but outcome-driven.",
+      "frustrations": [
+        "Credible demanded payment before she could access a single meaningful session",
+        "YouTube mock interviews are passive — no one actually interrupts or challenges her",
+        "Friends doing mock interviews aren't available on demand and aren't tough enough",
+        "Anxiety spikes specifically when interrupted mid-answer, which no tool has ever trained her for"
+      ],
+      "goals": [
+        "Simulate the exact pressure of a McKinsey or Google behavioral interview",
+        "Reduce filler word frequency from ~8 per minute to under 2 per minute in 6 weeks",
+        "Build the reflex to recover gracefully when interrupted mid-sentence",
+        "Land a job offer within 90 days — this is a time-sensitive, high-stakes goal"
+      ],
+      "willingnessToPay": "$8–12/month during active job search; highly likely to upgrade to premium for interview-specific scenario packs; price-sensitive but conversion-ready if free tier delivers real value within first session"
+    },
+    {
+      "name": "Derek, The Entrepreneur Pitching Investors",
+      "profile": "34-year-old founder of a B2B SaaS startup preparing for a seed round. Has pitched 6 angels with mixed results — feedback is always 'you need to be more confident under pressure.' No formal speaking training. Reads First Round Capital blog, follows YC advice, and is willing to invest in tools that directly improve fundraising outcomes. Time-poor: needs high-density practice in 20-minute sessions.",
+      "frustrations": [
+        "Investor Q&A is brutal and no tool has ever simulated a skeptical VC firing rapid follow-ups",
+        "Generic speech apps don't understand pitch context — they treat a fundraising pitch like a classroom presentation",
+        "Wasted $200 on a human speech coach who gave vague encouragement instead of adversarial pressure",
+        "Progress is invisible — no longitudinal data showing whether he's actually improving across sessions"
+      ],
+      "goals": [
+        "Simulate hostile investor Q&A with realistic follow-up pressure before his Series A roadshow",
+        "Reduce rambling and improve answer conciseness to under 90 seconds per response",
+        "See quantified improvement in coherence and confidence scores across 20+ sessions",
+        "Close a $1.5M seed round within 5 months — Cognitize is a direct investment in that outcome"
+      ],
+      "willingnessToPay": "$20–25/month without hesitation; would pay $200–250/year for an annual plan with investor pitch scenario packs; ROI framing makes price largely irrelevant if outcomes are credible"
+    },
+    {
+      "name": "Sofia, The College Student Building Confidence",
+      "profile": "20-year-old junior studying communications at a state university. Struggles with public speaking anxiety in class presentations and club leadership roles. Discovered Cognitize through a TikTok review. Has no disposable income for subscriptions but is highly engaged with free tools. Represents a large top-of-funnel segment that converts to paid post-graduation or through student pricing.",
+      "frustrations": [
+        "Every speech app either costs money immediately or gives feedback so vague it's useless",
+        "Classroom practice is infrequent and professors don't give granular feedback",
+        "She knows she uses filler words constantly but no tool has ever shown her exactly when and why",
+        "Fear of being interrupted mid-sentence in class is her #1 anxiety trigger — nothing trains for this"
+      ],
+      "goals": [
+        "Reduce visible anxiety and filler words before her senior capstone presentation in 4 months",
+        "Build enough confidence to lead club meetings without her voice shaking",
+        "Use a free tool that actually works so she can recommend it to her study group",
+        "Eventually upgrade to premium when she starts job hunting next year"
+      ],
+      "willingnessToPay": "$0 now on free tier; $5–7/month on a verified student plan; high lifetime value potential as she enters the workforce in 12–18 months; strong viral referral value within university networks"
+    }
+  ],
+  "positioning": {
+    "valueProposition": "Cognitize is the only AI speech coach that puts you under real conversational pressure — interrupting you mid-sentence, firing adversarial follow-ups, and simulating the unpredictable dynamics of live high-stakes speaking — with honest, explainable feedback and ethical monetization that lets you experience real value before spending a cent.",
+    "differentiators": [
+      "Real-time adversarial interruption engine: the only app that actively disrupts your speech mid-sentence to build genuine pressure reflexes, not passive playback",
+      "Transparent explainable AI scoring: every metric — filler words, pacing, coherence, confidence markers — explained in plain language with no black-box ratings",
+      "Generous functional free tier: core pressure simulation and feedback accessible without a subscription, directly countering Credible and Orai's paywall-first model",
+      "On-device audio processing for privacy and offline reliability: no cloud dependency for core features, no latency, no crashes on poor networks",
+      "Longitudinal weakness pattern recognition: cross-session AI analysis that identifies recurring failure patterns competitors treat as isolated events",
+      "Ethical billing with one-tap cancellation, 3-day renewal reminders, and zero dark patterns — a trust signal no competitor currently offers"
+    ],
+    "positioningStatement": "For professionals, job seekers, and students who need to perform under real speaking pressure, Cognitize is the AI speech coaching platform that actively challenges you the way a tough interviewer or skeptical investor would — unlike Orai, Credible, and Vocal Image, which offer passive recording, black-box feedback, and aggressive paywalls that destroy trust before delivering value. Cognitize earns your subscription by proving its worth first."
+  },
+  "revenueModel": {
+    "strategy": "Freemium with monthly and annual subscription tiers. Free tier is genuinely functional to drive organic acquisition and trust, converting users after demonstrated value. Premium tiers unlock advanced adversarial scenarios, deep analytics, and personalization. No trial expiration walls — free tier is permanent. Revenue model is designed to minimize churn through ethical billing and pause-instead-of-cancel mechanics. Target blended ARPU of $11–14/month across paying cohorts by month 12.",
+    "tiers": [
+      {
+        "name": "Free — Core Pressure",
+        "price": "$0/month forever",
+        "features": [
+          "5 pressure simulation sessions per week with real-time AI interruption",
+          "3 core scenario types: impromptu speech, general Q&A, casual presentation",
+          "Post-session feedback on filler words, pacing, and clarity with plain-language explanations",
+          "Personal progress dashboard tracking improvement across last 10 sessions",
+          "On-device audio processing — no cloud required for core features",
+          "One-tap session replay with timestamped feedback markers",
+          "No credit card required, no trial expiration, no aggressive upsell prompts"
+        ]
+      },
+      {
+        "name": "Pro — Full Pressure",
+        "price": "$12/month or $99/year (31% savings)",
+        "features": [
+          "Unlimited pressure simulation sessions with adjustable adversarial intensity",
+          "Full scenario library: investor pitches, hostile Q&A, debate rounds, job interviews, difficult conversations, classroom presentations",
+          "Adversarial persona calibration — configure AI interruption style, aggression level, and questioning approach",
+          "Longitudinal weakness pattern recognition across all sessions with monthly insight reports",
+          "Advanced analytics: coherence scoring, confidence marker trends, response conciseness tracking",
+          "Exportable session reports for coaches, mentors, or interview prep accountability partners",
+          "Priority access to new scenario packs released monthly",
+          "3-day renewal reminders, one-tap cancellation, pause subscription option — zero dark patterns",
+          "Cloud sync with end-to-end encrypted backup"
+        ]
+      },
+      {
+        "name": "Teams — Organizational Coaching",
+        "price": "$8/user/month (minimum 5 users) or $75/user/year",
+        "features": [
+          "All Pro features for every seat",
+          "Team admin dashboard with aggregate speaking improvement analytics",
+          "Manager-assigned scenario packs for specific team training objectives (e.g., sales pitch prep, all-hands presentation)",
+          "Shared scenario library with custom scenario creation for company-specific contexts",
+          "Onboarding support and quarterly progress reviews",
+          "SSO and enterprise-grade data privacy compliance",
+          "Dedicated account manager for teams of 20 or more",
+          "Volume pricing available for 50+ seats"
+        ]
+      }
+    ],
+    "projectedArpu": "Blended ARPU across paying users projected at $13.50/month by month 12. Breakdown: Pro monthly cohort averages $12/month; Pro annual cohort averages $8.25/month (amortized); Teams cohort averages $8/user/month with average team size of 8 users. Conversion rate from free to paid targeted at 6–9% by month 6, rising to 11–14% by month 12 as scenario library depth increases. Student plan ($5/month) introduced at month 4 to capture Sofia-segment volume with lower ARPU but high LTV trajectory."
+  },
+  "goToMarket": {
+    "launchChannels": [
+      "Reddit organic seeding: r/PublicSpeaking, r/jobs, r/cscareerquestions, r/Entrepreneur, r/MBA — post genuine value content and session demos, not ads; these communities have 2M+ combined members actively discussing the exact pain points Cognitize solves",
+      "TikTok and Instagram Reels: 60-second before/after pressure session demos showing real AI interruption in action — visceral, shareable content that demonstrates the product better than any description; target creators in career advice, interview prep, and self-improvement niches for organic partnerships",
+      "Product Hunt launch: coordinate a top-5 finish on launch day with pre-built upvote community from beta users; Product Hunt drives early adopter tech audience with high conversion intent",
+      "LinkedIn thought leadership: publish weekly articles on speaking anxiety, interview performance, and communication skills targeting the Marcus and Derek personas; LinkedIn's algorithm rewards consistent niche expertise content",
+      "App Store optimization (ASO): target high-intent keywords — 'interview practice app,' 'public speaking coach,' 'speech anxiety app,' 'pitch practice AI' — with A/B tested screenshots showing the interruption mechanic as the hero visual",
+      "University partnership program: partner with 10–15 career centers and communications departments in months 2–3 to offer free Pro access to students in exchange for testimonials and campus word-of-mouth; Sofia-segment acquisition at near-zero CAC",
+      "Podcast sponsorships: target career and entrepreneurship podcasts with 50K–200K listeners (e.g., The Tim Ferriss Show adjacent shows, How I Built This, career coaching podcasts) starting month 3 when conversion data supports paid acquisition",
+      "Email newsletter sponsorships: sponsor 3–5 career-focused newsletters (Lenny's Newsletter, The Hustle, Morning Brew career vertical) with a free-tier CTA — low friction, high-intent audience"
+    ],
+    "first90DaysPlan": "Days 1–30 (Seed Trust and Acquire Early Adopters): Soft launch on iOS with invite-only beta to 500 pre-registered users recruited from Reddit and LinkedIn waitlist. Goal: 500 active users, 200 completing 3+ sessions, NPS above 45. Publish transparent build-in-public updates on Twitter and LinkedIn documenting real user feedback and product iterations. Submit to Product Hunt for end-of-week-4 launch. Zero paid acquisition — all organic. Instrument every session for retention and drop-off data. Fix top 3 friction points identified in beta before public launch. Days 31–60 (Public Launch and Channel Validation): Full App Store launch with optimized listing. Execute Product Hunt launch targeting top 5 of the day. Activate Reddit seeding strategy across 5 subreddits with genuine value posts. Begin TikTok content series — 3 posts per week showing real pressure sessions. Target 5,000 total downloads, 800 weekly active users, 4.2+ App Store rating. Identify which 2 acquisition channels have lowest CAC and highest session-completion rate — double down on those. Launch university partnership outreach to 15 schools. Days 61–90 (Conversion Optimization and Retention Deepening): Introduce Pro tier with first paid conversion push. Target 6% free-to-paid conversion. Launch first monthly scenario pack to demonstrate Pro value cadence. Activate 3 podcast sponsorships with free-tier CTA. Begin longitudinal pattern recognition feature rollout to increase Pro stickiness. Target 12,000 total downloads, 2,000 weekly active users, 120+ paying subscribers, MRR of $1,400+. Conduct first cohort churn analysis and implement pause-instead-of-cancel flow to reduce involuntary churn.",
+    "keyMetrics": [
+      "Weekly Active Users (WAU) — primary engagement health metric; target 2,000 by day 90, 15,000 by month 12",
+      "Session completion rate — percentage of started sessions completed without abandonment; target above 72% indicating pressure simulation is engaging not overwhelming",
+      "Free-to-paid conversion rate — target 6% by month 3, 12% by month 9; leading indicator of free tier value delivery",
+      "Day-7 and Day-30 retention rates — target 45% D7 and 28% D30; speech coaching is habit-forming if early sessions deliver clear progress signals",
+      "Monthly Recurring Revenue (MRR) — target $1,400 by day 90, $18,000 by month 6, $65,000 by month 12",
+      "Net Promoter Score (NPS) — target above 50 by month 3; trust and ethical billing positioning should drive above-average NPS for the category",
+      "Average sessions per active user per week — target 3.5 sessions/week indicating habitual use, not one-time curiosity",
+      "Churn rate — target below 5% monthly for Pro subscribers; pause-instead-of-cancel mechanic should reduce involuntary churn by 20–30%",
+      "App Store rating — maintain above 4.4 stars; ethical billing and honest feedback positioning should generate organic positive reviews",
+      "CAC by channel — track cost per acquired user and cost per paying user by channel to optimize spend allocation by month 4"
+    ]
+  },
+  "competitiveMoat": [
+    {
+      "advantage": "Proprietary Adversarial Interruption Data Flywheel",
+      "description": "Every session generates labeled data on which interruption timing, question types, and pressure tactics produce the highest skill improvement rates for specific user profiles. Over 100,000 sessions, Cognitize builds a dataset no competitor can replicate — enabling increasingly precise calibration of when and how to interrupt each individual user for maximum learning impact. This data moat compounds: the more users practice, the smarter the interruption engine becomes, widening the performance gap against any new entrant attempting to build a similar system from scratch."
+    },
+    {
+      "advantage": "Longitudinal Speaking Pattern Recognition",
+      "description": "Cognitize is the only platform that tracks weakness patterns across sessions rather than treating each session as isolated. After 10+ sessions, the AI identifies that a specific user consistently loses coherence when interrupted on technical topics but performs well on narrative questions — and adjusts future sessions accordingly. This personalization depth creates switching costs: a user who has 30 sessions of calibrated history in Cognitize faces a complete reset if they move to a competitor. The longer they use it, the more irreplaceable it becomes."
+    },
+    {
+      "advantage": "Trust Brand in a Category Defined by Distrust",
+      "description": "Vocal Image's fake review scandal, Credible's aggressive paywall, and Orai's opaque scoring have created a category-wide trust deficit. Cognitize's ethical billing, explainable AI, and functional free tier position it as the only trustworthy option — a brand attribute that is paradoxically difficult for incumbents to copy because doing so requires them to dismantle their existing monetization models. New entrants can claim trustworthiness but cannot demonstrate it without years of consistent behavior. Cognitize's transparent billing and no-dark-patterns commitment, if maintained, becomes a durable brand moat."
+    },
+    {
+      "advantage": "Scenario Library Network Effect via Institutional Partnerships",
+      "description": "As university career centers and corporate L&D teams adopt Cognitize Teams, they contribute use-case requirements that expand the scenario library in directions individual users would never request — negotiation simulations, board presentation prep, media interview training. Each institutional partner effectively co-develops the product, and their adoption creates social proof that accelerates further institutional sales. The scenario library becomes a competitive asset that individual-focused competitors cannot match without the same institutional relationships."
+    },
+    {
+      "advantage": "On-Device Processing as Privacy and Performance Moat",
+      "description": "Cognitize's local audio processing architecture means core features work offline, load instantly, and never send raw voice data to the cloud without explicit consent. As AI audio privacy concerns grow — particularly in enterprise and education contexts — this architecture becomes a procurement requirement that cloud-dependent competitors cannot meet without fundamental re-engineering. The technical investment in on-device processing today creates a compliance and performance advantage that compounds as privacy regulation tightens in the EU, California, and enterprise procurement standards."
+    }
+  ]
+}

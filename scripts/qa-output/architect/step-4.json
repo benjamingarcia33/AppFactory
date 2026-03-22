@@ -1,0 +1,163 @@
+{
+  "mvpScope": {
+    "coreFeatures": [
+      "Flexible Recurring Routine Scheduler: Daily, every-N-days, weekly, and custom interval scheduling with timezone-aware push notifications via Expo Notifications. Stores RRULE-style recurrence data in Supabase. Grace period logic prevents streak breaks from timezone travel. AM/PM designation per routine step.",
+      "Shelf-First Product Entry with Barcode Scan: Add products via expo-camera barcode scanning mode (SDK 52), manual entry form, or Open Food Facts API lookup. Every product stores name, brand, product type, and INCI ingredient list. No user is ever blocked — manual entry is always available as the final fallback.",
+      "Ingredient Conflict Detection and Layering Guide: On-device bundled JSON (~200KB, 500 known conflict pairs sourced from INCIDecoder and dermatology literature) provides instant (<50ms) conflict flags. Claude 4.5 Sonnet via Supabase Edge Function generates plain-language explanations and optimal layering order asynchronously. Results cached in Upstash Redis keyed on ingredient fingerprint hash.",
+      "Routine Builder From Owned Products: Drag-and-drop routine builder that pulls from the user's personal product shelf. Suggests layering order by product type (cleanser → toner → serum → moisturizer → SPF). Supports multiple routines (AM, PM, weekly actives). Fully free with no feature gates.",
+      "Skin Condition Daily Log: Simple daily check-in (breakout severity, dryness, redness, sensitivity on 1–5 scale) with optional free-text notes. Logs are timestamped and stored in Supabase. Weekly trend sparklines shown on dashboard. This is the data foundation for the correlation engine.",
+      "Honest Freemium Paywall with RevenueCat SDK 8+: Free tier covers all above features permanently. GlowLog Pro ($7.99/month or $47.99/year) unlocks Skin Story correlation summaries, unlimited progress photos, and CSV/JSON data export. RevenueCat SDK 8+ handles subscription state with 48-hour local cache fallback so outages never lock paying users out.",
+      "Progress Photo Log (Free tier: 30 photos, Pro: unlimited): Camera roll or in-app capture stored in Supabase Storage with date tagging. Side-by-side comparison view for any two dates. No facial analysis — purely a personal visual diary. Free tier capped at 30 photos to manage storage costs."
+    ],
+    "deferredFeatures": [
+      "Skin Story AI correlation engine (Claude 4.5 Sonnet weekly summaries) — deferred to Week 10-12 post-MVP as a Pro feature requiring sufficient logged data to be meaningful",
+      "Community-moderated product database and user-submitted product contributions with moderation queue — deferred to v1.1, too operationally complex for solo launch",
+      "GPT-5.4 Vision label photo extraction for unrecognized products — deferred to v1.1, fallback manual entry covers the gap at launch",
+      "Environmental data correlation (UV index, humidity via Open-Meteo API) — deferred to v1.1, requires sufficient user logging history to be statistically meaningful",
+      "Android launch — iOS App Store only at launch, Android in v1.1 after iOS stability is confirmed",
+      "Social sharing and routine export as shareable cards — deferred to v1.2",
+      "Algolia-powered community product search — deferred to v1.1, Open Food Facts + manual entry sufficient for MVP",
+      "Streak gamification beyond basic count display — deferred to v1.1"
+    ],
+    "definitionOfDone": "App is live on iOS App Store (not TestFlight-only). All 7 core features work without crashes on iPhone 12 and above running iOS 16+. Barcode scan successfully identifies products from Open Food Facts for at least 70% of common Western skincare brands tested. Ingredient conflict detection returns results in under 200ms for on-device rules and under 4 seconds for Claude-enhanced explanations. Push notifications fire within 5 minutes of scheduled time. RevenueCat subscription purchase and restore flows work end-to-end in production. App has been used by 10-20 beta users for at least 2 weeks with no P0 crashes reported. Supabase Row Level Security policies verified so no user can read another user's data. App Store listing is live with screenshots, description, and privacy policy URL pointing to a hosted policy that accurately describes data collection.",
+    "timeline": "16 weeks for one solo developer: Weeks 1-2 foundation and auth, Weeks 3-5 product shelf and barcode scanning, Weeks 6-8 routine builder and scheduler, Weeks 9-10 skin log and dashboard, Week 11 ingredient conflict engine and RevenueCat paywall, Week 12-13 progress photos and polish, Week 14 beta testing with 10-20 users, Weeks 15-16 App Store submission, review, and launch."
+  },
+  "techStack": {
+    "frontend": "Expo SDK 52 with React Native 0.76+. Expo Router v4 for file-based navigation. NativeWind v4 for Tailwind-style styling on React Native. React Native Reanimated 3 for drag-and-drop routine builder and smooth animations. expo-camera (SDK 52) for barcode scanning — expo-barcode-scanner is removed in SDK 52 and must not be used. expo-notifications for timezone-aware push reminders. expo-image for optimized progress photo display. Zustand for lightweight client state management. React Query (TanStack Query v5) for server state, caching, and optimistic updates. RevenueCat SDK 8+ (react-native-purchases) for subscription management. Expo Updates for OTA delivery of bundled ingredient conflict JSON without App Store releases.",
+    "backend": "Supabase Edge Functions (Deno runtime) for all server-side logic including AI API calls, barcode lookup orchestration, and subscription webhook handling. Three primary Edge Functions: /analyze-ingredients (conflict detection + Claude 4.5 Sonnet layering explanation), /lookup-product (Open Food Facts API proxy with Upstash Redis cache), and /generate-skin-story (weekly Pro correlation summary via Claude 4.5 Sonnet, triggered by Inngest v3 scheduled job). Inngest v3 SDK for the weekly Skin Story batch job and retry logic — avoids building a custom cron system. All Edge Functions are stateless and independently deployable.",
+    "database": "Supabase (PostgreSQL) as the primary database with Drizzle ORM for type-safe schema definition and migrations. Key tables: users (extends Supabase Auth), products (user shelf items with INCI ingredient arrays stored as jsonb), routines (recurrence rule as text, timezone, AM/PM flag), routine_steps (product_id, order_index, routine_id), routine_completions (timestamp, routine_id, skipped_product_ids as jsonb), skin_logs (date, breakout/dryness/redness/sensitivity scores, notes), progress_photos (storage_path, date, user_id). Row Level Security enabled on all tables — every policy uses auth.uid() = user_id. Supabase Storage for progress photos with per-user folder isolation. Upstash Redis (@upstash/redis latest) for ingredient analysis cache (TTL 30 days, keyed on SHA-256 hash of sorted ingredient array) and product lookup cache (TTL 7 days).",
+    "aiIntegration": "Claude 4.5 Sonnet (claude-api) for ingredient conflict plain-language explanations, optimal layering order generation, and weekly Skin Story correlation summaries. Called exclusively from Supabase Edge Functions — API key never exposed to client. Prompt templates are versioned strings stored in Edge Function environment variables. On-device bundled conflict rules JSON (500 pairs, ~200KB) handles deterministic conflict flagging with zero latency and zero API cost — Claude is additive, not load-bearing. GPT-5.4 Vision (gpt5-vision) deferred to v1.1 for label photo extraction. All AI responses for ingredient explanations are cached in Upstash Redis with 30-day TTL targeting 80%+ cache hit rate by Month 2. Inngest v3 orchestrates weekly Skin Story batch generation with max 5 concurrent Claude calls to stay within rate limits and control costs. Estimated AI cost at launch: $0.04-$0.09 per active user per month.",
+    "infrastructure": "Supabase free tier (500MB database, 1GB storage, 50MB Edge Function bundle) covers 0-500 users. Upgrade to Supabase Pro ($25/month) at ~300 users for storage headroom. Upstash Redis free tier (10,000 commands/day) covers early growth; pay-as-you-go pricing kicks in gracefully. Inngest free tier (50,000 function runs/month) covers weekly Skin Story jobs for up to 1,500 Pro users. Expo EAS Build for iOS builds ($0 on free tier for hobby, $29/month Personal plan for faster build queues). RevenueCat free tier covers up to $2,500 MTR. Open Food Facts API is free with no key required. Total estimated monthly infrastructure cost at launch: $25-$75/month (Supabase Pro + Upstash pay-as-you-go + EAS). Scales to $100-$150/month at 2,000 MAU. Well within $50-$200/month solo budget."
+  },
+  "twelveWeekPlan": [
+    {
+      "weeks": "Weeks 1-2",
+      "focus": "Foundation: Project setup, auth, database schema, and navigation skeleton",
+      "deliverables": [
+        "Initialize Expo SDK 52 project with Expo Router v4, NativeWind v4, and TypeScript strict mode. Configure EAS Build for iOS development profile.",
+        "Set up Supabase project: define full Drizzle ORM schema for all 7 tables, run initial migration, enable Row Level Security with auth.uid() policies on every table.",
+        "Implement Supabase Auth: email/password signup and login screens, session persistence via expo-secure-store, and a protected route guard in Expo Router.",
+        "Configure Upstash Redis instance and verify @upstash/redis connection from a test Edge Function.",
+        "Set up Inngest v3 project, connect to Supabase Edge Functions, and deploy a hello-world scheduled function to verify the pipeline.",
+        "Build tab navigation shell (Home, Shelf, Routines, Log, Profile) with placeholder screens so the full app structure is navigable from Day 1."
+      ]
+    }
+  ],
+  "testingStrategy": {
+    "unitTesting": "Jest with React Native Testing Library targeting critical business logic only — not UI snapshots. Priority test targets: (1) Recurrence rule calculation function that computes next-due dates from RRULE-style data and user timezone — this is the most complex pure logic in the app and must be tested for DST edge cases, travel scenarios, and custom intervals. (2) Ingredient conflict lookup function that queries the bundled JSON rules — test that known conflict pairs (Retinol+AHA, Retinol+Benzoyl Peroxide) are correctly flagged and non-conflicting pairs return clean. (3) Streak calculation logic including grace period rules. (4) RevenueCat entitlement check helper that determines free vs Pro feature access including the 48-hour cache fallback. Target: 15-25 focused unit tests covering these four critical paths. No snapshot tests, no UI component tests at MVP — too brittle for a solo developer to maintain.",
+    "integrationTesting": "Manual integration testing against a Supabase staging project (separate from production, identical schema). Test scripts documented in a Notion checklist covering: full user signup → add product via barcode → build routine → complete routine → log skin condition → view dashboard flow. Barcode scan tested with 20 real product barcodes across Western and Korean brands to validate Open Food Facts hit rate. RevenueCat sandbox purchase and restore tested on a physical iPhone using StoreKit sandbox environment — this must be tested on device, not simulator. Edge Function endpoints tested via curl scripts stored in /scripts directory for repeatable manual verification. Supabase RLS policies tested by creating two test user accounts and verifying that direct Supabase client queries from User A cannot return User B's data.",
+    "aiQualityTesting": "Maintain a golden test set of 30 ingredient combination scenarios in a spreadsheet: 10 known conflicts (Retinol+AHA, Retinol+Benzoyl Peroxide, high-dose Vitamin C + Niacinamide at low pH, etc.), 10 safe combinations that are commonly misidentified as conflicts, and 10 complex multi-product routines. Before each production deployment of the /analyze-ingredients Edge Function, run the golden set manually and verify: (1) all 10 known conflicts are flagged by the on-device rules JSON, (2) Claude 4.5 Sonnet explanations are in plain language without hallucinated severity claims, (3) layering order suggestions match dermatologist-recommended sequences. Log Claude responses for the golden set in a versioned file to detect prompt drift. If Claude response quality degrades (detected by manual review), roll back the prompt template version via environment variable without redeploying the Edge Function.",
+    "performanceTesting": "Manual performance benchmarks on a physical iPhone 12 (minimum supported device) using React Native Performance Monitor and Flipper. Key targets: (1) App cold start to interactive Home screen under 3 seconds. (2) Barcode scan to product result display under 2 seconds for Open Food Facts cache hits. (3) On-device ingredient conflict check under 200ms — measured by console.time() around the bundled JSON lookup. (4) Routine save with Claude async analysis: optimistic UI updates immediately, Claude result populates within 4 seconds on LTE. (5) Progress photo grid (30 photos) renders without jank — use expo-image with blurhash placeholders. No automated performance regression suite at MVP — manual spot-checks before each TestFlight build. Supabase query performance monitored via the Supabase dashboard slow query log; any query over 100ms gets an index added.",
+    "abTesting": "No formal A/B testing infrastructure at MVP — premature for a 10-20 user beta. Instead, use structured qualitative testing: present two versions of the onboarding flow (skin-quiz-first vs shelf-first) to different beta user cohorts (5 users each) and collect feedback via a simple Typeform survey after 1 week. For the paywall screen, test two price anchoring approaches (monthly-first vs annual-first) by manually switching the RevenueCat offering via the RevenueCat dashboard — no code changes required. Track conversion in RevenueCat analytics. Post-launch A/B testing with Statsig or PostHog feature flags will be introduced in v1.1 once there are enough users (target 200+ MAU) for statistical significance. At MVP, ship the single best-judgment version and iterate based on qualitative feedback."
+  },
+  "launchChecklist": [
+    {
+      "item": "Supabase production project has RLS enabled and verified on all tables — run the two-user cross-access test one final time against production credentials",
+      "category": "Technical"
+    },
+    {
+      "item": "All Supabase Edge Functions deployed to production with production API keys (Anthropic Claude, Upstash Redis) set as encrypted environment variables — never hardcoded",
+      "category": "Technical"
+    },
+    {
+      "item": "Expo EAS Build production profile configured with correct bundle identifier (com.glowlog.app), signing certificate, and provisioning profile for App Store distribution",
+      "category": "Technical"
+    },
+    {
+      "item": "RevenueCat production app configured with App Store Connect shared secret, products (monthly and annual GlowLog Pro) created in App Store Connect and synced to RevenueCat offerings",
+      "category": "Technical"
+    },
+    {
+      "item": "Inngest production environment connected to production Supabase Edge Function URLs — weekly Skin Story job scheduled and verified with a manual trigger",
+      "category": "Technical"
+    },
+    {
+      "item": "Expo Updates (OTA) channel configured for production — bundled ingredient conflict JSON can be updated without App Store release",
+      "category": "Technical"
+    },
+    {
+      "item": "expo-camera barcode scanning tested on 5 physical iOS devices across iPhone 12, 13, 14, and 15 generations — confirm no SDK 52 camera permission regressions",
+      "category": "Technical"
+    },
+    {
+      "item": "Push notification entitlement added to EAS build profile, expo-notifications tested end-to-end on physical device (simulator does not support push)",
+      "category": "Technical"
+    },
+    {
+      "item": "Supabase Storage CORS policy configured to allow only the production app bundle ID — progress photos are not publicly accessible without auth token",
+      "category": "Technical"
+    },
+    {
+      "item": "App Store Connect app record created with correct primary category (Health & Fitness), age rating (4+), and privacy nutrition labels accurately reflecting data collected (Health & Fitness data, Identifiers)",
+      "category": "Store Submission"
+    },
+    {
+      "item": "Privacy policy hosted at a permanent URL (e.g., glowlog.app/privacy) — must explicitly state: health data collected, no facial scanning, no data sold to third parties, GDPR export right, right to deletion",
+      "category": "Store Submission"
+    },
+    {
+      "item": "App Store screenshots created for iPhone 6.7-inch (iPhone 15 Pro Max) and iPhone 6.1-inch (iPhone 15) — minimum 3 screenshots, lead with 'free forever' and 'no paywall surprises' messaging",
+      "category": "Store Submission"
+    },
+    {
+      "item": "App Store description written with ASO-optimized keywords in first 255 characters: 'skincare routine tracker', 'ingredient conflict checker', 'retinol schedule', 'free skincare diary'",
+      "category": "Store Submission"
+    },
+    {
+      "item": "TestFlight build submitted and approved (takes 1-2 days for first review) before submitting for App Store review — use TestFlight link for beta users during Week 14",
+      "category": "Store Submission"
+    },
+    {
+      "item": "App Store review submission includes reviewer notes explaining barcode scan feature requires camera permission and that RevenueCat sandbox can be tested with provided test credentials",
+      "category": "Store Submission"
+    },
+    {
+      "item": "Supabase dashboard alerts configured for database connection pool exhaustion (>80% utilization) and Edge Function error rate (>5% in 5-minute window)",
+      "category": "Monitoring"
+    },
+    {
+      "item": "Sentry (free tier) integrated in the Expo app for crash reporting — verify that Sentry captures a test exception before submitting to App Store",
+      "category": "Monitoring"
+    },
+    {
+      "item": "PostHog (free tier, self-hosted or cloud) integrated for anonymous event tracking: routine_completed, product_added, paywall_viewed, subscription_started — no PII in event properties",
+      "category": "Monitoring"
+    },
+    {
+      "item": "RevenueCat dashboard configured with email alerts for first subscription purchase and for any subscription cancellation — solo developer needs to know immediately",
+      "category": "Monitoring"
+    },
+    {
+      "item": "Upstash Redis cache hit rate monitored via Upstash console — if ingredient cache hit rate is below 50% after Week 2 post-launch, investigate cache key collision or TTL misconfiguration",
+      "category": "Monitoring"
+    },
+    {
+      "item": "Prepare a rollback plan: if a critical bug is found post-launch, the previous EAS production build can be re-submitted via App Store Connect without a new review (use the previous build number). Document the rollback steps in a README.",
+      "category": "Rollback"
+    },
+    {
+      "item": "Supabase database backup verified — confirm daily automated backups are enabled on Supabase Pro plan and that a manual restore has been tested on the staging project",
+      "category": "Rollback"
+    },
+    {
+      "item": "Feature flag for Claude AI ingredient analysis: if Anthropic API has an outage, a single environment variable toggle in the Edge Function switches to on-device-only conflict rules with a UI banner. Test this toggle before launch.",
+      "category": "Rollback"
+    },
+    {
+      "item": "Inngest job failure alerting configured — if the weekly Skin Story job fails 3 consecutive times, an email alert fires. Dashboard falls back to last successful summary with timestamp displayed.",
+      "category": "Rollback"
+    },
+    {
+      "item": "Define Day-1 success metrics and check them at 24h, 72h, and 7 days post-launch: installs (target 50+ in Week 1 via Reddit seeding), Day-1 retention (target 35%+), products logged per user (target 2+ in first session), crash-free session rate (target 99%+ via Sentry)",
+      "category": "Metrics"
+    },
+    {
+      "item": "Set up a simple feedback channel before launch: a Typeform linked from the app's Profile screen ('Send Feedback') and a dedicated email address (hello@glowlog.app) monitored daily in the first 4 weeks",
+      "category": "Support"
+    },
+    {
+      "item": "Prepare 5 canned responses for common support scenarios: 'my barcode didn't scan', 'I was charged unexpectedly' (should not happen but prepare anyway), 'how do I export my data', 'I lost my streak', 'how do I cancel'",
+      "category": "Support"
+    }
+  ]
+}

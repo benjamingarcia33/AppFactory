@@ -62,6 +62,7 @@ async function searchTopAppsSerpApiFallback(
       icon: (app.thumbnail as string) ?? "",
       url: (app.link as string) ?? "",
       developer: (app.developer as string) ?? "",
+      dataConfidence: "medium",
     })
   );
 }
@@ -98,6 +99,7 @@ async function getAppDetailsSerpApiFallback(
     icon: (info.thumbnail as string) ?? "",
     url: (info.link as string) ?? "",
     developer: (info.developer as string) ?? "",
+    dataConfidence: "medium",
   };
 }
 
@@ -152,6 +154,55 @@ async function getAppReviewsSerpApiFallback(
 }
 
 /**
+ * Enrich SerpAPI Google Play results with full detail from npm scraper.
+ * Fetches histogram, price, offersIAP, priceText, and full description.
+ * Concurrency 5 with 500ms inter-batch delay.
+ */
+async function enrichGPlayMetadata(apps: ScrapedApp[]): Promise<ScrapedApp[]> {
+  const CONCURRENCY = 5;
+  const INTER_BATCH_DELAY = 200;
+  const enriched = [...apps];
+
+  for (let i = 0; i < enriched.length; i += CONCURRENCY) {
+    const batch = enriched.slice(i, i + CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map((app) =>
+        withRetry(() => gplay.app({ appId: app.id }), 1)
+      )
+    );
+
+    results.forEach((result, idx) => {
+      if (result.status === "fulfilled" && result.value) {
+        const detail = result.value;
+        enriched[i + idx] = {
+          ...enriched[i + idx],
+          score: Number(detail.score ?? enriched[i + idx].score),
+          ratings: Number(detail.ratings ?? enriched[i + idx].ratings),
+          installs: detail.installs ?? String(detail.maxInstalls ?? enriched[i + idx].installs),
+          description: detail.description ?? enriched[i + idx].description,
+          dataConfidence: "high",
+        };
+      } else {
+        // Keep medium confidence from SerpAPI if enrichment fails
+        if (!enriched[i + idx].dataConfidence) {
+          enriched[i + idx] = {
+            ...enriched[i + idx],
+            dataConfidence: "medium",
+          };
+        }
+      }
+    });
+
+    // Inter-batch delay to avoid rate limiting
+    if (i + CONCURRENCY < enriched.length) {
+      await new Promise((resolve) => setTimeout(resolve, INTER_BATCH_DELAY));
+    }
+  }
+
+  return enriched;
+}
+
+/**
  * Search top free apps on Google Play by category.
  * Uses the google-play-scraper npm package as the primary source,
  * with SerpAPI as an optional fallback.
@@ -190,6 +241,7 @@ export async function searchTopApps(
     icon: app.icon ?? "",
     url: app.url ?? "",
     developer: app.developer ?? "",
+    dataConfidence: "high",
   });
 
   try {
@@ -241,7 +293,8 @@ export async function searchTopApps(
         "[google-play] Falling back to SerpAPI for searchTopApps..."
       );
       try {
-        return await searchTopAppsSerpApiFallback(category);
+        const serpResults = await searchTopAppsSerpApiFallback(category);
+        return await enrichGPlayMetadata(serpResults);
       } catch (fallbackError) {
         const fallbackMessage =
           fallbackError instanceof Error
@@ -306,6 +359,7 @@ export async function searchByQuery(
         icon: app.icon ?? "",
         url: app.url ?? "",
         developer: app.developer ?? "",
+        dataConfidence: "high",
       })
     );
   } catch (primaryError) {
@@ -335,7 +389,7 @@ export async function searchByQuery(
 
         const serpResults = response.organic_results ?? [];
 
-        return serpResults.map(
+        const serpApps = serpResults.map(
           (app: Record<string, unknown>): ScrapedApp => ({
             id: (app.product_id as string) ?? "",
             title: (app.title as string) ?? "",
@@ -348,8 +402,11 @@ export async function searchByQuery(
             icon: (app.thumbnail as string) ?? "",
             url: (app.link as string) ?? "",
             developer: (app.developer as string) ?? "",
+            dataConfidence: "medium",
           })
         );
+
+        return await enrichGPlayMetadata(serpApps);
       } catch (fallbackError) {
         const fallbackMessage =
           fallbackError instanceof Error
@@ -394,6 +451,7 @@ export async function getAppDetails(
       icon: app.icon ?? "",
       url: app.url ?? "",
       developer: app.developer ?? "",
+      dataConfidence: "high",
     };
   } catch (primaryError) {
     const errorMessage =

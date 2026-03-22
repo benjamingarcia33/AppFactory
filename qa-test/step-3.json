@@ -1,0 +1,117 @@
+{
+  "modelsAndApis": [
+    {
+      "useCase": "Real-time speech transcription during pressure sessions",
+      "model": "deepgram",
+      "rationale": "Deepgram offers sub-300ms streaming transcription with word-level timestamps, which is essential for the interruption engine to detect natural pause points and inject AI challenges mid-speech. Its Nova-2 model outperforms Whisper on latency for live streaming. AssemblyAI is a fallback but Deepgram's WebSocket streaming API is purpose-built for this low-latency use case. Slug: deepgram."
+    },
+    {
+      "useCase": "Post-session high-accuracy transcription for feedback analysis",
+      "model": "openai-whisper",
+      "rationale": "After session completion, accuracy matters more than speed. OpenAI Whisper's large-v3 model provides best-in-class transcription accuracy for filler word detection, pacing analysis, and coherence scoring. Used as a batch process post-session so latency is not a constraint. Slug: openai-whisper."
+    },
+    {
+      "useCase": "Adversarial conversation engine — interruptions, follow-up questions, topic pivots",
+      "model": "openai-gpt4o",
+      "rationale": "GPT-4o's low-latency streaming completions and strong instruction-following make it ideal for generating contextually appropriate interruptions, pointed follow-up questions, and unexpected topic pivots in real time. Its function-calling capability allows the pressure engine to trigger structured interruption events. The system prompt encodes persona calibration (difficulty level, aggression style, scenario context). Slug: openai-gpt4o."
+    },
+    {
+      "useCase": "Feedback generation — explainable scoring and plain-language coaching insights",
+      "model": "claude-api",
+      "rationale": "Claude (claude-3-5-sonnet) excels at nuanced, structured long-form analysis and produces more natural, coaching-toned prose than GPT-4o for post-session feedback. Its 200k context window allows the full session transcript plus historical session summaries to be passed in for longitudinal pattern recognition. Transparent scoring explanations benefit from Claude's tendency toward thorough, readable reasoning. Slug: claude-api."
+    },
+    {
+      "useCase": "AI voice output for the pressure simulation coach persona",
+      "model": "elevenlabs-tts",
+      "rationale": "ElevenLabs TTS provides the most natural, expressive voice synthesis available via API, critical for making the AI coach feel like a real adversarial presence rather than a robotic prompt reader. Latency is acceptable for turn-based interruption delivery (200-400ms). A custom voice clone can be created for the Cognitize coach persona to build brand identity. Slug: elevenlabs-tts."
+    },
+    {
+      "useCase": "Orchestration of multi-step feedback pipeline and session state management",
+      "model": "vercel-ai-sdk",
+      "rationale": "The Vercel AI SDK provides unified streaming abstractions over GPT-4o and Claude, simplifying the real-time session orchestration layer and post-session pipeline. Its useChat and streamText primitives reduce boilerplate for the mobile backend API layer. Slug: vercel-ai-sdk."
+    },
+    {
+      "useCase": "Behavioral analytics and session engagement tracking",
+      "model": "posthog",
+      "rationale": "PostHog provides self-hostable product analytics with session replay, funnel analysis, and feature flags — critical for measuring session completion rates, identifying where users abandon pressure sessions, and A/B testing difficulty calibration. GDPR-compliant with EU hosting option. Slug: posthog."
+    },
+    {
+      "useCase": "In-app subscription and paywall management (iOS)",
+      "model": "revenucat",
+      "rationale": "RevenueCat is the industry standard for iOS subscription management, handling StoreKit 2, receipt validation, entitlement logic, and subscription lifecycle events. It directly supports the ethical billing requirement with webhook-driven renewal reminders and pause/cancel flows. Slug: revenucat."
+    },
+    {
+      "useCase": "Error monitoring and crash-free architecture baseline",
+      "model": "sentry",
+      "rationale": "Sentry provides real-time crash reporting, performance monitoring, and session replay for React Native/Expo. Given that crash-free architecture is a non-negotiable product requirement, Sentry is essential for maintaining the reliability SLA and catching audio pipeline failures before they reach users. Slug: sentry."
+    }
+  ],
+  "dataStrategy": {
+    "dataNeeded": [
+      "Session audio recordings (raw and processed) for transcription and feedback",
+      "Word-level transcription data with timestamps for filler word and pacing analysis",
+      "Session metadata: scenario type, difficulty level, duration, completion status, interruption events",
+      "Longitudinal feedback scores per user: filler word frequency, pacing variance, coherence scores, confidence markers",
+      "User-configured pressure persona settings: aggression level, interruption frequency, scenario preferences",
+      "Aggregated (anonymized) interruption-response patterns for model fine-tuning and difficulty calibration",
+      "Subscription and entitlement state for paywall enforcement",
+      "Crash and performance telemetry for reliability monitoring"
+    ],
+    "collectionApproach": "Audio is captured on-device via the Expo AV API and streamed in real time to Deepgram via WebSocket for live transcription during sessions. Raw audio is stored locally on-device by default using Expo FileSystem; cloud sync to Supabase Storage is opt-in and explicitly consented. Post-session, the local transcript is sent to the backend (Supabase Edge Functions) which orchestrates the Whisper re-transcription and Claude feedback pipeline. Session metadata and feedback scores are stored in Supabase PostgreSQL with row-level security scoped to the authenticated user. Longitudinal pattern data is computed server-side and cached per user. Anonymized, aggregated interruption-response data (stripped of all PII and audio) is retained for model improvement. PostHog captures behavioral events (session started, interrupted, completed, abandoned) with no audio or transcript content. RevenueCat manages subscription state independently with its own secure storage.",
+    "complianceNotes": "GDPR and CCPA compliance is achieved through the following measures: (1) Audio processing consent is obtained at onboarding with explicit opt-in for cloud sync — local-only processing is the default, satisfying data minimization principles. (2) Users can delete all their data (audio, transcripts, scores, account) via a single in-app action, triggering cascading deletes across Supabase Storage, PostgreSQL, and PostHog via a deletion webhook pipeline. (3) Supabase is configured with EU region hosting (eu-west-1) to satisfy GDPR data residency requirements for European users. (4) No audio or transcript data is used for third-party model training without explicit opt-in consent. (5) A clear, plain-language privacy policy is displayed before first session and linked from every feedback screen. (6) PostHog is configured with IP anonymization enabled and no cross-site tracking. (7) ElevenLabs and Deepgram API calls are routed through the backend (never directly from client) so raw audio never touches third-party servers without server-side logging controls. (8) RevenueCat handles no PII beyond Apple/Google account identifiers, which are governed by platform terms. (9) CCPA-specific: a Do Not Sell toggle is surfaced in settings, and a data export endpoint is provided per CCPA access rights."
+  },
+  "architecture": {
+    "processingModel": "Hybrid on-device and cloud architecture. On-device: audio capture, local transcript storage, cached feedback scores, and offline scenario browsing using Expo FileSystem and AsyncStorage. The core pressure session can begin without network for pre-loaded scenarios, with local Whisper (via a quantized ONNX model bundled with the app for offline fallback) handling basic transcription. Cloud: real-time Deepgram streaming transcription for live sessions, GPT-4o adversarial engine, Claude feedback pipeline, and Supabase for persistent storage and sync. The split ensures the app is usable in low-connectivity environments while full AI features require a connection. On-device processing for audio capture means raw audio never leaves the device until the user initiates a cloud-dependent feature, satisfying the privacy-first positioning.",
+    "apiArchitecture": "Backend-for-Frontend (BFF) pattern using Supabase Edge Functions as the primary API layer. The mobile client (React Native/Expo) communicates exclusively with Supabase Edge Functions — never directly with OpenAI, Deepgram, Anthropic, or ElevenLabs APIs. This architecture: (1) keeps all API keys server-side, (2) enables request validation and rate limiting per user, (3) allows provider swapping without client updates, and (4) enables cost metering per user session. The real-time pressure session uses a WebSocket connection from the client through a LiveKit-inspired audio relay (or direct Deepgram WebSocket proxied through the edge function) to minimize latency. The Vercel AI SDK's streaming primitives are used on the edge function layer to stream GPT-4o interruption responses back to the client with sub-500ms perceived latency. Post-session feedback is a separate async pipeline triggered by session completion, with results pushed to the client via Supabase Realtime when ready.",
+    "cachingStrategy": "Three-tier caching strategy: (1) Client-side: scenario metadata, user progress state, and the last 5 session feedback summaries are cached in AsyncStorage for instant load on app open — no network required for the home screen or scenario browser. (2) Edge-layer: Supabase Edge Functions cache scenario prompt templates and difficulty calibration parameters in memory (Deno KV) with a 1-hour TTL, reducing database reads for high-frequency session starts. (3) Feedback pipeline: Claude-generated feedback for identical or near-identical short sessions (e.g., standard 2-minute warm-up drills) is cached by a hash of the transcript + scenario ID in Supabase PostgreSQL with a 7-day TTL, avoiding redundant API calls for common patterns. GPT-4o interruption responses are never cached — they must be dynamically generated per session to maintain unpredictability, which is core to the product value. ElevenLabs TTS responses for fixed coach persona phrases (session intros, standard interruption openers) are pre-generated and bundled as audio assets in the app to eliminate TTS latency for common utterances.",
+    "fallbackMechanisms": [
+      "Deepgram streaming failure: fall back to AssemblyAI real-time streaming API with automatic retry logic in the edge function layer. If both fail, session continues with client-side silence detection (Expo AV amplitude monitoring) to trigger interruptions on pause patterns, with transcription queued for post-session Whisper processing.",
+      "GPT-4o unavailability or rate limit: fall back to Claude API for interruption generation with a pre-configured adversarial system prompt. Response latency increases by ~200ms but session continuity is maintained. A circuit breaker pattern (3 failures in 60 seconds) triggers the fallback automatically.",
+      "ElevenLabs TTS failure: fall back to iOS native AVSpeechSynthesizer for coach voice output. Quality degrades but session is not interrupted. Users are notified with a subtle UI indicator that voice quality is reduced.",
+      "Supabase Edge Function cold start latency spike: pre-warm critical functions (session-start, feedback-generate) via a scheduled ping every 5 minutes during peak hours (6am–11pm user local time) using Supabase cron jobs.",
+      "Full cloud outage: offline mode activates automatically, using the bundled quantized Whisper model for basic transcription and a pre-generated library of 200 interruption prompts stored locally. Feedback is limited to filler word counts and pacing metrics computable on-device. Users see a clear offline mode indicator and sessions are flagged for cloud sync when connectivity returns."
+    ]
+  },
+  "costAnalysis": {
+    "estimatedCostPerUser": "Estimated blended cost per active user per month (assuming 3 sessions/week, 10 minutes/session, 12 sessions/month): Deepgram streaming transcription at $0.0059/minute x 120 minutes = $0.71. OpenAI GPT-4o for interruption engine at ~500 tokens input + 150 tokens output per interruption, ~8 interruptions/session, 12 sessions = ~96 interruption calls = ~$0.08 (at $5/1M input, $15/1M output tokens). Claude API for post-session feedback at ~4,000 tokens input + 800 tokens output per session, 12 sessions = ~$0.22 (at $3/1M input, $15/1M output). ElevenLabs TTS for dynamic coach utterances at ~200 characters/interruption x 96 calls = ~19,200 chars = ~$0.19 (at $0.01/1K chars on Creator plan). Supabase storage and compute: ~$0.04/user/month at scale. Total estimated cloud AI cost per active user per month: approximately $1.24. Free tier users consuming 4 sessions/month cost approximately $0.41/month. Premium users at $12/month yield ~$10.76 gross margin after AI costs. Target blended CAC payback under 3 months at 15% free-to-paid conversion.",
+    "optimizationStrategies": [
+      "Implement session-level token budgeting: cap GPT-4o interruption context window to the last 800 tokens of transcript (rolling window) rather than full session history, reducing input token costs by ~60% with negligible quality impact on interruption relevance.",
+      "Pre-generate and bundle 200 common ElevenLabs TTS interruption phrases as static audio assets in the app binary, eliminating TTS API calls for ~70% of interruption deliveries and reducing ElevenLabs costs by an estimated 65%.",
+      "Use Deepgram's Nova-2 model (not Nova-3) for streaming — it is 40% cheaper with only marginal accuracy difference for English speech, saving ~$0.28/user/month.",
+      "Implement a feedback caching layer: hash session transcript + scenario ID and cache Claude feedback for near-duplicate sessions (common in beginner drills) with a 7-day TTL, targeting 15-20% cache hit rate among free tier users who repeat similar exercises.",
+      "Rate-limit free tier users to 4 AI-powered sessions per month with local-only (offline Whisper + pre-generated interruptions) sessions available unlimited, shifting heavy AI costs to paying users while maintaining the generous free tier promise.",
+      "Batch post-session Whisper transcription during off-peak hours (queued via Supabase job queue) rather than processing immediately, enabling use of OpenAI Batch API at 50% cost reduction for the accuracy transcription pass.",
+      "Monitor per-user AI cost in real time via PostHog custom events; automatically flag users exceeding 3x average consumption for review, preventing abuse by power users on the free tier."
+    ]
+  },
+  "risks": [
+    {
+      "risk": "Real-time interruption latency exceeding 800ms, breaking the illusion of a live adversarial coach and degrading the core product experience",
+      "mitigation": "Architect the interruption pipeline for end-to-end latency under 600ms: Deepgram streaming delivers transcript chunks every 100ms, GPT-4o streaming response begins within 200ms of prompt submission, ElevenLabs TTS first audio chunk streams within 150ms. Pre-warm Edge Functions to eliminate cold starts. Bundle the 200 most common interruption phrases as local audio assets to achieve zero-latency delivery for ~70% of interruptions. Conduct latency regression testing in CI/CD pipeline with a hard failure threshold of 800ms P95."
+    },
+    {
+      "risk": "GPT-4o generating inappropriate, offensive, or factually wrong interruption content that damages user trust or causes harm",
+      "mitigation": "Implement a two-layer content safety system: (1) OpenAI's built-in moderation endpoint screens all generated interruptions before delivery, rejecting flagged content and substituting a safe fallback prompt from the local library. (2) A custom system prompt with strict persona constraints limits the AI to professional coaching contexts and explicitly prohibits personal attacks, discriminatory content, and medical/legal advice. All interruption templates are reviewed by a human content team before scenario launch. Users can report harmful AI responses in-session with a single tap, triggering automatic session termination and flagging for review."
+    },
+    {
+      "risk": "Vendor lock-in to OpenAI GPT-4o for the core interruption engine, creating existential risk if pricing increases, API terms change, or service degrades",
+      "mitigation": "Abstract all LLM calls behind a provider-agnostic interface layer in the Edge Function codebase (adapter pattern). Claude API is maintained as a fully tested, production-ready fallback for the interruption engine with equivalent system prompts. Evaluate open-source alternatives (Llama 3.1 70B via Replicate or self-hosted) quarterly. Maintain no more than 70% of monthly LLM spend with any single provider. Session interruption prompt templates are stored in the database (not hardcoded), enabling provider switching without code deployment."
+    },
+    {
+      "risk": "On-device audio processing and cloud transmission creating GDPR/CCPA liability, particularly for EU users whose voice data is a biometric data category under GDPR Article 9",
+      "mitigation": "Default to local-only audio processing with no cloud transmission unless the user explicitly opts in to cloud features. Implement end-to-end encryption for all audio transmitted to backend APIs using TLS 1.3. Audio is deleted from Deepgram and ElevenLabs servers immediately after processing (confirmed via their data retention APIs). Conduct a formal GDPR Data Protection Impact Assessment (DPIA) before EU launch. Appoint a Data Protection Officer (DPO) or engage a GDPR compliance service. Store no raw audio in Supabase by default — only transcripts and derived metrics."
+    },
+    {
+      "risk": "Inaccurate filler word detection or pacing scores (false positives/negatives) replicating the trust-destroying feedback quality issues seen in Vocal Image and Credible",
+      "mitigation": "Use Deepgram's word-level confidence scores to filter low-confidence transcription segments before filler word analysis, reducing false positives. Implement a human-validated ground truth dataset of 500 labeled speech samples (diverse accents, speaking speeds) to benchmark feedback accuracy before launch, targeting >92% filler word detection precision. Display confidence intervals on all scores (e.g., 'approximately 8-10 filler words') rather than false precision. Provide users with a feedback correction mechanism — if they dispute a score, the correction is logged and used to improve the model. Publish the scoring methodology publicly in the app's help center."
+    },
+    {
+      "risk": "Scalability bottleneck in the real-time WebSocket audio pipeline under concurrent user load, causing session failures during viral growth spikes",
+      "mitigation": "Use Deepgram's managed WebSocket infrastructure (not self-hosted) to offload streaming scalability to their platform, which handles millions of concurrent streams. The Supabase Edge Function layer is stateless and horizontally auto-scales. Implement a session queue with graceful degradation: if concurrent session load exceeds capacity thresholds, new sessions are started in offline mode with a user notification and automatic upgrade to full AI mode when capacity is available. Load test to 10,000 concurrent sessions before public launch using k6 or Artillery."
+    },
+    {
+      "risk": "RevenueCat or App Store subscription management failures causing unauthorized charges or failed cancellations, directly violating the ethical billing core value proposition",
+      "mitigation": "Implement triple-redundancy for subscription state: RevenueCat as primary, App Store server notifications as secondary, and a Supabase-side subscription log as tertiary. All three must agree before premium features are revoked. Renewal reminder notifications are sent 3 days before renewal via Expo Notifications as a non-negotiable feature, not optional. Conduct monthly manual audits of subscription lifecycle events in RevenueCat dashboard. Maintain a dedicated customer support email with 24-hour response SLA for billing disputes, and implement a no-questions-asked refund policy for the first 30 days."
+    }
+  ]
+}

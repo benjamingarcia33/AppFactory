@@ -1,0 +1,1 @@
+ALTER TABLE "scans" ADD COLUMN "gap_analysis_json" text;

@@ -1,0 +1,482 @@
+{
+  "platform": "mobile-expo",
+  "selectedTechnologies": [
+    {
+      "techSlug": "supabase-auth",
+      "category": "auth",
+      "justification": "Supabase Auth is the natural choice given the entire backend runs on Supabase. Provides email/password and Apple Sign-In (required for iOS App Store) out of the box. Integrates seamlessly with Supabase RLS policies for row-level security on all user data tables.",
+      "customizations": [
+        "Configure Apple Sign-In as primary social provider (App Store requirement since the app offers social login)",
+        "Enable email/password as fallback auth method",
+        "Set up custom user metadata fields for skin_type, experience_level, and timezone at signup",
+        "Configure JWT expiry to 1 hour with refresh token rotation for security"
+      ]
+    },
+    {
+      "techSlug": "supabase-postgresql",
+      "category": "database",
+      "justification": "Primary database for all app data. PostgreSQL's jsonb columns are ideal for storing INCI ingredient arrays and flexible recurrence rule data. Supabase's free tier (500MB) covers 0-500 users, and RLS policies ensure users can only access their own skin data — critical for health-adjacent data.",
+      "customizations": [
+        "Tables: users, products (with jsonb ingredient_list), routines, routine_steps, routine_completions, skin_logs, progress_photos, skin_stories",
+        "RLS policies on every table scoped to auth.uid()",
+        "pg_cron extension for scheduled cleanup jobs",
+        "RRULE-style text column on routines table for flexible recurrence patterns",
+        "GIN index on products.ingredient_list jsonb for fast ingredient lookups"
+      ]
+    },
+    {
+      "techSlug": "drizzle-orm",
+      "category": "database",
+      "justification": "Type-safe ORM that works well with Supabase PostgreSQL and generates clean SQL. Lighter than Prisma, works in both the React Native client (for local type safety) and Supabase Edge Functions (Deno runtime). Schema-as-code approach keeps migrations versioned and predictable.",
+      "customizations": [
+        "Define all table schemas in a shared types package",
+        "Use drizzle-kit for migration generation",
+        "Configure for Supabase PostgreSQL connection string",
+        "Type-safe query builders for complex joins (routine + steps + products)"
+      ]
+    },
+    {
+      "techSlug": "supabase-edge-functions",
+      "category": "deployment",
+      "justification": "All server-side logic runs here — AI API calls to Claude and GPT-5 Vision, barcode lookup orchestration, subscription webhook handling. Deno runtime keeps API keys secure and never exposed to the client. Three primary functions: analyze-ingredients, lookup-product, generate-skin-story.",
+      "customizations": [
+        "Edge Function: /analyze-ingredients — accepts product ingredient arrays, runs Claude 4.5 Sonnet for conflict detection and layering order",
+        "Edge Function: /lookup-product — orchestrates barcode lookup chain (local cache → Open Food Facts → manual entry fallback)",
+        "Edge Function: /generate-skin-story — weekly correlation summary generation triggered by Inngest",
+        "Edge Function: /extract-label — GPT-5 Vision label extraction fallback",
+        "All functions use shared middleware for auth verification and rate limiting"
+      ]
+    },
+    {
+      "techSlug": "claude-api",
+      "category": "ai-text",
+      "justification": "Primary AI model for ingredient conflict plain-language explanations, optimal layering order generation, beginner ingredient education, and weekly Skin Story correlation summaries. Claude 4.5 Sonnet excels at structured reasoning over ingredient data and produces reliable, well-formatted responses.",
+      "customizations": [
+        "Prompt template for ingredient conflict analysis with structured JSON input/output",
+        "Prompt template for Skin Story weekly summaries from pre-aggregated numerical data",
+        "Prompt template for adaptive ingredient education calibrated to user experience level",
+        "All prompts versioned as string constants in Edge Functions",
+        "Response format enforced via system prompts requesting JSON with specific fields",
+        "Temperature set to 0.2 for conflict analysis (deterministic), 0.5 for education (more natural)"
+      ]
+    },
+    {
+      "techSlug": "gpt5-vision",
+      "category": "ai-vision",
+      "justification": "Fallback for product identification when barcode lookup fails. User photographs the product label and GPT-5 Vision extracts product name, brand, and full INCI ingredient list. Critical for K-beauty and niche products not in Open Food Facts database.",
+      "customizations": [
+        "Prompt engineered for INCI ingredient list extraction from product label photos",
+        "Supports Korean, Japanese, and English label text",
+        "Returns structured JSON with product_name, brand, ingredient_list array",
+        "Results always shown in editable confirmation screen — never silently accepted",
+        "Flagged as vision-sourced in database for quality tracking"
+      ]
+    },
+    {
+      "techSlug": "upstash-redis",
+      "category": "caching",
+      "justification": "Server-side caching layer for AI responses. Ingredient conflict analysis results are cached by ingredient fingerprint hash, achieving 80%+ cache hit rate by Month 2. Also caches Open Food Facts barcode lookups and ingredient education responses. Free tier covers early growth with 10,000 commands/day.",
+      "customizations": [
+        "Cache key pattern: ingredient-conflict:{sorted-ingredient-hash}",
+        "Cache key pattern: product-barcode:{barcode-number}",
+        "Cache key pattern: ingredient-edu:{ingredient-slug}:{experience-level}",
+        "TTL: 30 days for ingredient conflicts, 7 days for barcode lookups, 14 days for education",
+        "Cache invalidation on conflict rules database update"
+      ]
+    },
+    {
+      "techSlug": "inngest",
+      "category": "background-jobs",
+      "justification": "Handles scheduled background jobs — primarily the weekly Skin Story generation that processes all eligible users' logged data and generates Claude-powered correlation summaries. Also handles batch operations like community product database syncing and stale cache cleanup.",
+      "customizations": [
+        "Weekly cron job: generate-skin-stories — runs every Sunday, processes users with 7+ days of logged data",
+        "Controlled concurrency: max 10 parallel Claude API calls to avoid rate limits",
+        "Retry logic: 3 retries with exponential backoff on Claude API failures",
+        "Event-driven: trigger skin-story regeneration when user requests manual refresh",
+        "Future: batch product database sync job for community contributions"
+      ]
+    },
+    {
+      "techSlug": "eas-build",
+      "category": "deployment",
+      "justification": "Expo Application Services for building and submitting the iOS app to the App Store. Handles code signing, provisioning profiles, and build configuration. EAS Update enables OTA updates for the bundled ingredient conflict rules JSON without requiring App Store review.",
+      "customizations": [
+        "Production build profile with correct bundle identifier (com.glowlog.app)",
+        "EAS Update configured for OTA pushes of ingredient conflict rules JSON and product cache",
+        "Development and preview build profiles for testing",
+        "Automated submission to App Store Connect via eas submit"
+      ]
+    },
+    {
+      "techSlug": "expo-notifications",
+      "category": "notifications",
+      "justification": "Timezone-aware push notifications for routine reminders — the core scheduling feature. Users set reminders for AM/PM routines and custom-interval actives (e.g., retinol every 3 days). Expo Notifications handles token management and scheduling natively.",
+      "customizations": [
+        "Local scheduled notifications for routine reminders based on RRULE recurrence data",
+        "Timezone-aware scheduling that recalculates when user travels",
+        "Notification categories: routine-reminder, streak-warning, skin-story-ready",
+        "Custom notification sounds for different routine types",
+        "Permission request during onboarding with clear explanation of value"
+      ]
+    },
+    {
+      "techSlug": "revenucat",
+      "category": "payments",
+      "justification": "Manages the honest freemium model — GlowLog Pro subscription for advanced analytics, unlimited photo storage, and data export. RevenueCat handles App Store subscription lifecycle, receipt validation, and provides a clean SDK for feature gating without building custom subscription infrastructure.",
+      "customizations": [
+        "Two offerings: Monthly ($5.99/month) and Annual ($47.99/year)",
+        "Entitlements: pro_analytics (Skin Story AI), pro_photos (unlimited progress photos), pro_export (data export)",
+        "Paywall presented only on Pro feature access, never on core logging screens",
+        "Subscription state cached locally in Supabase Auth user metadata for offline access",
+        "RevenueCat webhook to Supabase Edge Function for server-side entitlement sync",
+        "48-hour grace period on cached subscription state to prevent lockouts during outages"
+      ]
+    },
+    {
+      "techSlug": "supabase-storage",
+      "category": "file-storage",
+      "justification": "Stores progress photos in Supabase Storage buckets with RLS policies ensuring users can only access their own photos. Free tier includes 1GB which covers early users. Photos are organized by user_id/date path structure.",
+      "customizations": [
+        "Bucket: progress-photos with RLS policy scoped to auth.uid()",
+        "Path structure: {user_id}/{date}/{photo_id}.jpg",
+        "Image compression on upload via expo-image-manipulator before storage",
+        "Free users: 50 photos limit, Pro users: unlimited",
+        "Thumbnail generation via Supabase Edge Function on upload"
+      ]
+    },
+    {
+      "techSlug": "expo-image-picker",
+      "category": "file-storage",
+      "justification": "Native image picker for progress photos and product label photography. Integrates with expo-camera for barcode scanning mode. Handles permissions gracefully on iOS.",
+      "customizations": [
+        "Camera mode for barcode scanning using expo-camera SDK 52",
+        "Photo library access for selecting existing progress photos",
+        "Image compression to max 1200px width before upload to reduce storage costs",
+        "Front camera default for skin selfies, rear camera for product labels"
+      ]
+    },
+    {
+      "techSlug": "algolia",
+      "category": "search",
+      "justification": "Powers the product search functionality — users can search for products by name or brand when adding to their shelf. Also serves as the community-contributed product database index. Algolia's typo tolerance and instant search are ideal for product name queries.",
+      "customizations": [
+        "Index: products — searchable by product_name, brand, product_type",
+        "Facets: product_type (cleanser, serum, moisturizer, SPF, etc.), brand",
+        "Community-contributed products flagged with moderation_status field",
+        "Typo tolerance enabled for brand name variations",
+        "Search results show ingredient count and conflict warning badges"
+      ]
+    },
+    {
+      "techSlug": "sentry",
+      "category": "analytics",
+      "justification": "Error tracking and performance monitoring for production. Critical for catching barcode scan failures, AI API errors, and Edge Function crashes. Sentry's React Native SDK provides crash reports with full stack traces.",
+      "customizations": [
+        "Configure for React Native with Expo plugin",
+        "Track AI API call failures with custom context (model, endpoint, input size)",
+        "Performance monitoring on key flows: barcode scan → product add, routine completion",
+        "Custom breadcrumbs for user journey through routine builder",
+        "Alert rules for Edge Function error rate spikes"
+      ]
+    },
+    {
+      "techSlug": "posthog",
+      "category": "analytics",
+      "justification": "Product analytics to understand user behavior — which features drive retention, where users drop off in onboarding, routine completion rates. PostHog's event-based tracking and free tier (1M events/month) are ideal for an indie app. Privacy-friendly with EU hosting option.",
+      "customizations": [
+        "Track events: product_added, routine_created, routine_completed, skin_log_entered, barcode_scanned, conflict_detected",
+        "Funnel analysis: onboarding → first product → first routine → first completion → day 7 retention",
+        "Feature flags for gradual rollout of new AI features",
+        "Session recording disabled (privacy-first approach)",
+        "User properties: skin_type, experience_level, subscription_tier"
+      ]
+    },
+    {
+      "techSlug": "expo-updates",
+      "category": "analytics",
+      "justification": "OTA update mechanism for pushing updated ingredient conflict rules JSON and product cache bundles without requiring App Store review. Critical for keeping the on-device conflict detection current as new ingredient research emerges.",
+      "customizations": [
+        "Update channel: production (stable), preview (beta testers)",
+        "Bundled assets include ingredient_conflicts.json (~200KB) and top_products_cache.json (~500KB)",
+        "Update check on app foreground with silent download and apply on next launch",
+        "Rollback capability if update causes crash rate spike",
+        "Version tracking in PostHog to correlate updates with user behavior changes"
+      ]
+    }
+  ],
+  "appScreens": [
+    {
+      "screenName": "Welcome & Skin Profile Onboarding",
+      "patternSlug": "onboarding-flow",
+      "assignedTechSlugs": [
+        "supabase-auth",
+        "supabase-postgresql",
+        "drizzle-orm",
+        "expo-notifications"
+      ],
+      "customNotes": "3-step onboarding: (1) Sign up with Apple or email, (2) Skin profile quiz — skin type (oily/dry/combo/sensitive/normal), experience level (beginner/intermediate/enthusiast), primary concerns (acne, aging, hyperpigmentation, sensitivity), (3) Notification permission request with clear value prop ('Get reminded for your routines'). Stores profile in user metadata. Timezone captured automatically. Skip option available — no forced quiz.",
+      "promptOrder": 1
+    },
+    {
+      "screenName": "Login",
+      "patternSlug": "login",
+      "assignedTechSlugs": [
+        "supabase-auth"
+      ],
+      "customNotes": "Apple Sign-In as primary CTA (required for App Store), email/password as secondary. Clean minimal design. 'Forgot password' flow via Supabase Auth magic link. No social login beyond Apple to keep it simple.",
+      "promptOrder": 1
+    },
+    {
+      "screenName": "Home Dashboard",
+      "patternSlug": "home-dashboard",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "supabase-auth"
+      ],
+      "customNotes": "Shows today's routines (AM/PM) with completion status, current streak count, quick-log button for skin condition, and a mini weekly skin score chart. Cards for: 'Today's AM Routine' (tap to start), 'Today's PM Routine', 'Log Skin Today' shortcut, 'Your Streak: X days'. If Skin Story is available (Pro), shows a summary card. Pulls routine_completions for today and skin_logs for the week.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Product Shelf",
+      "patternSlug": "data-table",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "algolia",
+        "expo-image-picker"
+      ],
+      "customNotes": "Grid/list view of all products the user owns. Each product card shows name, brand, product type icon, and ingredient count. FAB button to add new product (opens Add Product screen). Search bar powered by local filter for owned products. Sort by: recently added, product type, most used in routines. Swipe to archive (not delete — preserves history for Skin Story).",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Add Product",
+      "patternSlug": "creation-editor",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "algolia",
+        "expo-image-picker",
+        "gpt5-vision",
+        "supabase-edge-functions"
+      ],
+      "customNotes": "Three entry paths: (1) Barcode scan via expo-camera — scans barcode, looks up in Open Food Facts API via Edge Function, shows result for confirmation. (2) Search by name/brand via Algolia product index. (3) Manual entry form — product name, brand, type dropdown, full ingredient list text area. If barcode lookup fails, offers GPT-5 Vision label photo extraction as fallback, then manual entry. Ingredient list parsed into array and stored as jsonb. User always confirms before save.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Product Detail",
+      "patternSlug": "detail-view",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "claude-api",
+        "supabase-edge-functions",
+        "upstash-redis"
+      ],
+      "customNotes": "Shows full product info: name, brand, type, ingredient list with tappable ingredients. Tapping an ingredient opens a bottom sheet with plain-language explanation from Claude (cached via Upstash). Shows which routines this product is used in. 'Known conflicts with your other products' section flags any conflicts with products on the user's shelf. Edit button to update product details.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Routine Builder",
+      "patternSlug": "creation-editor",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "claude-api",
+        "supabase-edge-functions",
+        "upstash-redis"
+      ],
+      "customNotes": "Create/edit a routine by selecting products from the user's shelf. Drag-and-drop reordering with React Native Reanimated. Auto-suggest layering order by product type (cleanser → toner → essence → serum → moisturizer → SPF). After adding products, Edge Function calls Claude for ingredient conflict check — flags conflicts inline with plain-language warnings. Schedule picker: AM/PM toggle, recurrence selector (daily, every N days, specific weekdays, monthly). Timezone displayed and editable. Save creates routine with RRULE-style recurrence data.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Routine Execution",
+      "patternSlug": "detail-view",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm"
+      ],
+      "customNotes": "Step-by-step routine walkthrough. Shows each product in order with a checkbox. User taps to mark each step complete or skip. Timer option for wait steps (e.g., 'Wait 2 min after Vitamin C before next step'). On completion, logs to routine_completions table with timestamp, completed steps, and skipped steps. Streak calculation updates immediately. Satisfying completion animation.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Skin Log Entry",
+      "patternSlug": "creation-editor",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "expo-image-picker",
+        "supabase-storage"
+      ],
+      "customNotes": "Quick daily skin condition log. Sliders (1-5 scale) for: breakout severity, dryness, redness, oiliness, overall satisfaction. Optional notes text field. Optional progress photo (front camera selfie). Photo compressed and uploaded to Supabase Storage. Takes under 30 seconds to complete — designed for daily habit. Date defaults to today but can be backdated.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Skin Story Dashboard",
+      "patternSlug": "home-dashboard",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "claude-api",
+        "supabase-edge-functions",
+        "inngest",
+        "upstash-redis"
+      ],
+      "customNotes": "Pro-only screen showing AI-generated correlation insights. Weekly and monthly charts: skin score trends, routine completion rate, product usage frequency. Claude-generated narrative summary: 'Your skin improved when you consistently used [Product X] and avoided [Product Y] on the same day.' Generated weekly by Inngest background job. Free users see a simplified version with basic stats (streak, average scores) and a tasteful upgrade prompt — no aggressive paywall.",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "Ingredient Conflict Guide",
+      "patternSlug": "detail-view",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "claude-api",
+        "supabase-edge-functions",
+        "upstash-redis"
+      ],
+      "customNotes": "Standalone reference screen showing all detected conflicts across the user's entire product shelf. Grouped by severity: 'Avoid combining' (red), 'Use with caution' (yellow), 'Common myth — actually safe' (green). Each conflict card shows the two ingredients, which products contain them, and a plain-language explanation. Uses on-device bundled rules for instant display, with Claude enrichment for detailed explanations cached in Redis.",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "Progress Photos Gallery",
+      "patternSlug": "file-browser",
+      "assignedTechSlugs": [
+        "supabase-storage",
+        "supabase-postgresql",
+        "drizzle-orm"
+      ],
+      "customNotes": "Chronological gallery of progress photos with date labels. Side-by-side comparison mode: select two photos to view them next to each other. Photos tagged with that day's skin log scores. Free users limited to 50 photos with counter shown; Pro users unlimited. Photos stored in Supabase Storage with RLS.",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "Routine Calendar",
+      "patternSlug": "calendar-view",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm"
+      ],
+      "customNotes": "Monthly calendar view showing routine completion history. Each day shows colored dots: green (all routines completed), yellow (partial), empty (missed), gray (no routine scheduled). Tap a day to see which routines were completed/missed and skin log for that day. Streak counter prominently displayed. Helps users visualize consistency patterns.",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "GlowLog Pro Paywall",
+      "patternSlug": "pricing-paywall",
+      "assignedTechSlugs": [
+        "revenucat",
+        "supabase-auth",
+        "supabase-postgresql"
+      ],
+      "customNotes": "Clean, honest paywall screen shown only when user taps a Pro feature. Lists what Pro includes: AI Skin Story insights, unlimited progress photos, data export (JSON/CSV), advanced charts. Two options: Monthly ($5.99/mo) and Annual ($47.99/yr, save 33%). No free trial tricks — clear pricing. 'Restore Purchases' button. Explicitly states what remains free. RevenueCat handles purchase flow and receipt validation.",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "Profile & Settings",
+      "patternSlug": "settings",
+      "assignedTechSlugs": [
+        "supabase-auth",
+        "supabase-postgresql",
+        "drizzle-orm",
+        "revenucat",
+        "expo-notifications"
+      ],
+      "customNotes": "Skin profile editor (skin type, experience level, concerns). Notification preferences (routine reminders on/off, reminder times). Subscription status and manage subscription link. Data export button (Pro feature — exports all data as JSON). Account deletion with full data wipe (GDPR compliance). Timezone display and override. App version and conflict rules version shown.",
+      "promptOrder": 1
+    },
+    {
+      "screenName": "Notification Center",
+      "patternSlug": "notification-center",
+      "assignedTechSlugs": [
+        "expo-notifications",
+        "supabase-postgresql",
+        "drizzle-orm"
+      ],
+      "customNotes": "In-app notification history showing routine reminders, streak milestones, and Skin Story ready alerts. Each notification is tappable — routine reminders navigate to Routine Execution, Skin Story alerts navigate to Skin Story Dashboard. Badge count on tab bar icon. Notifications marked as read on view.",
+      "promptOrder": 3
+    }
+  ],
+  "synergyNotes": [
+    {
+      "techSlugA": "supabase-auth",
+      "techSlugB": "supabase-postgresql",
+      "note": "Supabase Auth's auth.uid() is used directly in PostgreSQL RLS policies on every table. This means all data access is automatically scoped to the authenticated user without additional application-level filtering. The users table extends Supabase Auth with additional profile fields via a trigger on auth.users insert."
+    },
+    {
+      "techSlugA": "supabase-postgresql",
+      "techSlugB": "drizzle-orm",
+      "note": "Drizzle ORM generates TypeScript types from the PostgreSQL schema, providing end-to-end type safety from database to React Native components. Drizzle-kit handles migrations against the Supabase PostgreSQL instance. The jsonb columns for ingredient lists require custom Drizzle column type definitions."
+    },
+    {
+      "techSlugA": "supabase-edge-functions",
+      "techSlugB": "claude-api",
+      "note": "All Claude API calls are made exclusively from Supabase Edge Functions — the API key is stored as an encrypted environment variable and never exposed to the client. Edge Functions act as a secure proxy, adding auth verification, rate limiting, and response caching before forwarding to Claude."
+    },
+    {
+      "techSlugA": "supabase-edge-functions",
+      "techSlugB": "upstash-redis",
+      "note": "Every Edge Function that calls Claude or GPT-5 Vision checks Upstash Redis cache first using a deterministic key (ingredient hash, barcode number, etc.). Cache hits return immediately without incurring AI API costs. Cache writes happen after successful AI responses with appropriate TTLs."
+    },
+    {
+      "techSlugA": "revenucat",
+      "techSlugB": "supabase-auth",
+      "note": "RevenueCat subscription state is synced to Supabase Auth user metadata via a webhook-triggered Edge Function. This allows the client to check subscription status from the cached user metadata without hitting RevenueCat's API on every feature gate check. 48-hour cache validity prevents lockouts during RevenueCat outages."
+    },
+    {
+      "techSlugA": "inngest",
+      "techSlugB": "supabase-edge-functions",
+      "note": "Inngest triggers Supabase Edge Functions for scheduled background jobs (weekly Skin Story generation). The Edge Function handles the actual Claude API call and database writes, while Inngest manages scheduling, retries, and concurrency control. Inngest webhook endpoint is a dedicated Edge Function."
+    },
+    {
+      "techSlugA": "expo-notifications",
+      "techSlugB": "supabase-postgresql",
+      "note": "Notification tokens from Expo Notifications are stored in the users table. Routine recurrence rules (RRULE data) in the routines table drive local notification scheduling. When a user updates a routine schedule, all related local notifications are recalculated and rescheduled."
+    },
+    {
+      "techSlugA": "expo-image-picker",
+      "techSlugB": "supabase-storage",
+      "note": "Photos captured via Expo ImagePicker are compressed using expo-image-manipulator (max 1200px width, 80% JPEG quality) before uploading to Supabase Storage. This reduces storage costs and upload times significantly. The storage path includes user_id for RLS enforcement."
+    },
+    {
+      "techSlugA": "expo-updates",
+      "techSlugB": "upstash-redis",
+      "note": "When the bundled ingredient conflict rules JSON is updated via Expo Updates OTA push, the corresponding Redis cache entries for affected ingredient combinations should be invalidated. A version number in the bundled JSON triggers cache invalidation logic on the next Edge Function call."
+    },
+    {
+      "techSlugA": "algolia",
+      "techSlugB": "supabase-edge-functions",
+      "note": "Product search queries hit Algolia directly from the client for instant results. When a user adds a product from Algolia search results, the full product data is fetched via an Edge Function that enriches it with ingredient data from the database before saving to the user's shelf."
+    },
+    {
+      "techSlugA": "sentry",
+      "techSlugB": "supabase-edge-functions",
+      "note": "Sentry captures errors from both the React Native client and Supabase Edge Functions. Edge Function errors include custom context (AI model called, input size, cache hit/miss) to help diagnose AI-related failures. Client-side Sentry tracks barcode scan failure rates and navigation crashes."
+    }
+  ],
+  "promptPlan": {
+    "prompt1Screens": [
+      "Welcome & Skin Profile Onboarding",
+      "Login",
+      "Profile & Settings"
+    ],
+    "prompt1Focus": "Set up the Expo SDK 52 project with Expo Router v4 file-based navigation (tab layout with Home, Shelf, Routines, Log, Profile tabs). Configure Supabase Auth with Apple Sign-In and email/password. Create the full PostgreSQL schema with Drizzle ORM: users, products, routines, routine_steps, routine_completions, skin_logs, progress_photos tables with RLS policies on all tables. Build the onboarding flow (skin profile quiz with skin type, experience level, concerns), login screen, and settings screen with profile editing, notification preferences, and account deletion. Configure Expo Notifications permission request during onboarding. Set up Sentry error tracking and PostHog analytics initialization. Bundle the initial ingredient_conflicts.json file. Configure EAS Build profiles for development and production.",
+    "prompt2Screens": [
+      "Home Dashboard",
+      "Product Shelf",
+      "Add Product",
+      "Product Detail",
+      "Routine Builder",
+      "Routine Execution",
+      "Skin Log Entry"
+    ],
+    "prompt2Focus": "Build the core user experience loop. Home Dashboard shows today's routines with completion status, streak counter, and quick-log shortcut. Product Shelf displays user's products in a grid with search/sort. Add Product screen implements the three entry paths: barcode scan via expo-camera, Algolia product search, and manual entry form — with the Edge Function for barcode lookup orchestration. Product Detail shows full ingredient list with tappable ingredients that call Claude via Edge Function for plain-language explanations (cached in Upstash Redis). Routine Builder with drag-and-drop reordering, product selection from shelf, auto-layering suggestions, ingredient conflict detection via on-device rules + Claude enrichment, and flexible RRULE-based scheduling. Routine Execution as a step-by-step checklist that logs completions. Skin Log Entry with condition sliders and optional progress photo upload to Supabase Storage. Wire up Expo Notifications for routine reminders based on schedule data.",
+    "prompt3Screens": [
+      "Skin Story Dashboard",
+      "Ingredient Conflict Guide",
+      "Progress Photos Gallery",
+      "Routine Calendar",
+      "GlowLog Pro Paywall",
+      "Notification Center"
+    ],
+    "prompt3Focus": "Build premium and polish features. Skin Story Dashboard (Pro-only) with weekly/monthly charts using react-native-chart-kit and Claude-generated correlation narratives via Inngest scheduled background jobs. Ingredient Conflict Guide as a standalone reference showing all conflicts across the user's shelf. Progress Photos Gallery with chronological view and side-by-side comparison mode. Routine Calendar with monthly completion visualization. GlowLog Pro Paywall with RevenueCat integration — monthly and annual plans, subscription state synced to Supabase Auth metadata via webhook. Notification Center for in-app notification history. Configure GPT-5 Vision label extraction Edge Function as barcode scan fallback. Final polish: loading states, empty states, error boundaries, haptic feedback on completions, app icon and splash screen. Production EAS Build and App Store submission preparation."
+  }
+}

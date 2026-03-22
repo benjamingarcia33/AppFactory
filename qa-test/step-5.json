@@ -1,0 +1,443 @@
+{
+  "platform": "mobile-expo",
+  "selectedTechnologies": [
+    {
+      "techSlug": "supabase-auth",
+      "category": "auth",
+      "justification": "Supabase Auth provides email/password and social login with built-in session management, integrates natively with the Supabase ecosystem already chosen for database and edge functions. Free tier covers MVP traffic. Row Level Security policies tie directly to auth UIDs for session data privacy.",
+      "customizations": [
+        "Configure email/password auth with email verification",
+        "Add Apple Sign-In (required for iOS App Store) and Google Sign-In via Expo AuthSession",
+        "Set up custom JWT claims for free vs premium tier access",
+        "Configure 3-day renewal reminder email triggers via Supabase Auth hooks"
+      ]
+    },
+    {
+      "techSlug": "expo-auth-session",
+      "category": "auth",
+      "justification": "Required to handle OAuth flows (Apple Sign-In, Google Sign-In) within the Expo managed workflow. Works alongside Supabase Auth as the native OAuth broker on iOS.",
+      "customizations": [
+        "Configure Apple Sign-In with full name and email scopes",
+        "Configure Google Sign-In OAuth flow",
+        "Pass OAuth tokens to Supabase Auth for session creation"
+      ]
+    },
+    {
+      "techSlug": "supabase-postgresql",
+      "category": "database",
+      "justification": "Primary cloud database for user profiles, session metadata, feedback scores, scenario definitions, progress history, and subscription state. Supabase Postgres with RLS provides secure multi-tenant data isolation. Free tier supports MVP, Pro tier at $25/month scales to 500+ MAU.",
+      "customizations": [
+        "Tables: users, sessions, session_feedback, scenarios, user_progress, subscriptions",
+        "RLS policies ensuring users can only read/write their own session data",
+        "Indexes on user_id + created_at for fast progress history queries",
+        "Store scenario library as seed data with difficulty_level and category columns",
+        "JSONB columns for flexible feedback score breakdowns (filler_words, pacing, clarity, coherence, confidence)"
+      ]
+    },
+    {
+      "techSlug": "drizzle-orm",
+      "category": "database",
+      "justification": "Lightweight type-safe ORM for local SQLite database via Expo SQLite. Used for on-device session storage, cached feedback, and offline scenario metadata. Drizzle's SQL-like syntax and small bundle size are ideal for React Native.",
+      "customizations": [
+        "Define local schemas for cached_sessions, cached_feedback, scenario_cache",
+        "Implement sync logic to push local session data to Supabase when online",
+        "Use Drizzle migrations for local schema versioning"
+      ]
+    },
+    {
+      "techSlug": "deepgram",
+      "category": "ai-audio",
+      "justification": "Core real-time streaming transcription engine for the Pressure Simulation Engine. Deepgram Nova-2 delivers sub-300ms streaming transcription with word-level timestamps via WebSocket — essential for detecting when to trigger AI interruptions mid-speech. The interruption engine depends on this low-latency pipeline.",
+      "customizations": [
+        "WebSocket streaming connection from Supabase Edge Function (not direct from client for API key security)",
+        "Configure Nova-2 model with interim_results=true, punctuate=true, diarize=false, endpointing=300ms",
+        "Word-level timestamp extraction for filler word detection (um, uh, like, you know)",
+        "Implement automatic reconnection logic with exponential backoff on WebSocket drops",
+        "Fallback to AssemblyAI if Deepgram streaming fails"
+      ]
+    },
+    {
+      "techSlug": "openai-whisper",
+      "category": "ai-audio",
+      "justification": "Post-session high-accuracy transcription for detailed feedback analysis. After a session ends, the full audio is sent to Whisper large-v3 for a clean, accurate transcript that feeds into GPT-4o feedback generation. Accuracy matters more than speed for this use case.",
+      "customizations": [
+        "Use large-v3 model via OpenAI API for maximum accuracy",
+        "Process full session audio after session completion",
+        "Compare Whisper transcript against Deepgram real-time transcript for filler word validation",
+        "Language detection for potential future multi-language support"
+      ]
+    },
+    {
+      "techSlug": "elevenlabs-tts",
+      "category": "ai-audio",
+      "justification": "Generates natural-sounding AI voice for interruptions and pressure questions during live sessions. The adversarial coach needs to sound human and authoritative, not robotic. ElevenLabs provides the most natural TTS available.",
+      "customizations": [
+        "Pre-generate 200+ common interruption phrases as static audio assets bundled in app binary to reduce API calls",
+        "Real-time TTS generation only for dynamic, context-specific interruptions from GPT-4o",
+        "Configure a firm, authoritative voice profile for the AI coach persona",
+        "Implement audio ducking — reduce user's awareness of latency by starting TTS playback immediately"
+      ]
+    },
+    {
+      "techSlug": "openai-gpt4o",
+      "category": "ai-text",
+      "justification": "Powers the core intelligence of the Pressure Simulation Engine — generating contextually relevant interruptions, follow-up questions, and topic pivots based on real-time transcript context. Also generates post-session feedback analysis with plain-language explanations of scores.",
+      "customizations": [
+        "Interruption generation: system prompt with adversarial coach persona, context window capped at 800 tokens of recent transcript",
+        "Post-session feedback: structured JSON output with scores for filler_words, pacing, clarity, coherence, confidence plus plain-language explanations",
+        "Difficulty calibration: system prompt variants for beginner/intermediate/advanced pressure levels",
+        "Content safety: all outputs routed through OpenAI moderation endpoint before delivery to user",
+        "Temperature 0.7 for interruptions (creative but coherent), 0.3 for feedback (precise and consistent)"
+      ]
+    },
+    {
+      "techSlug": "claude-api",
+      "category": "ai-text",
+      "justification": "Fallback for GPT-4o when rate-limited or unavailable. Claude's conversational style works well for generating adversarial interruptions. Also used as secondary feedback generator for A/B quality comparison during development.",
+      "customizations": [
+        "Pre-configured adversarial coach system prompt mirroring GPT-4o persona",
+        "Automatic failover triggered by GPT-4o 429 or 500 responses",
+        "Same structured JSON output format for feedback to ensure UI compatibility"
+      ]
+    },
+    {
+      "techSlug": "assemblyai",
+      "category": "ai-audio",
+      "justification": "Fallback real-time streaming transcription if Deepgram experiences outages. AssemblyAI offers comparable real-time WebSocket streaming with word-level timestamps. Having a fallback for the core transcription pipeline is critical since the entire app depends on it.",
+      "customizations": [
+        "WebSocket streaming configuration matching Deepgram's output format",
+        "Automatic failover triggered by Deepgram connection failures",
+        "Normalized transcript output format so downstream interruption logic works identically"
+      ]
+    },
+    {
+      "techSlug": "supabase-edge-functions",
+      "category": "deployment",
+      "justification": "Backend-for-Frontend layer handling all AI API calls, WebSocket proxying for Deepgram streaming, session management, and subscription validation. Keeps API keys server-side. Deno runtime with low cold-start times.",
+      "customizations": [
+        "Edge function for real-time session orchestration: proxies Deepgram WebSocket, triggers GPT-4o interruptions, manages session state",
+        "Edge function for post-session analysis: orchestrates Whisper transcription → GPT-4o feedback generation → database storage",
+        "Edge function for subscription validation: checks RevenueCat webhook events and updates user tier",
+        "Rate limiting per user to prevent abuse of AI APIs",
+        "CORS configuration for Expo client"
+      ]
+    },
+    {
+      "techSlug": "eas-build",
+      "category": "deployment",
+      "justification": "Expo Application Services for building iOS binaries, managing app signing, and submitting to App Store. Essential for the iOS-first launch strategy. Supports OTA updates via expo-updates for rapid iteration.",
+      "customizations": [
+        "Configure iOS production build profile with proper provisioning",
+        "Set up internal distribution for TestFlight beta testing",
+        "Configure build-time environment variables for API endpoints",
+        "Automate build triggers from main branch merges"
+      ]
+    },
+    {
+      "techSlug": "supabase-storage",
+      "category": "file-storage",
+      "justification": "Cloud storage for session audio recordings with optional cloud sync. Users record locally by default but can sync to cloud for cross-device access and backup. Also stores pre-generated TTS audio assets for CDN delivery.",
+      "customizations": [
+        "Bucket: session-recordings with RLS policies (users access only their own recordings)",
+        "Bucket: tts-assets for pre-generated interruption audio files (public read)",
+        "Configure 90-day retention policy on session recordings to manage storage costs",
+        "Signed URL generation for secure audio playback"
+      ]
+    },
+    {
+      "techSlug": "revenucat",
+      "category": "payments",
+      "justification": "Industry-standard in-app subscription management for iOS. Handles App Store receipt validation, subscription state management, and provides server-side webhook events. Critical for the ethical billing system — supports one-tap cancellation, pause functionality, and renewal reminders.",
+      "customizations": [
+        "Configure two subscription tiers: Free (default) and Premium (monthly/annual)",
+        "Set up entitlements: premium_scenarios, advanced_analytics, unlimited_sessions",
+        "Implement 3-day pre-renewal notification via local notification trigger from RevenueCat subscription info",
+        "One-tap cancellation flow that opens iOS subscription management directly",
+        "Webhook integration with Supabase Edge Function to sync subscription state to database",
+        "No free trial dark patterns — premium features clearly labeled, free tier fully functional"
+      ]
+    },
+    {
+      "techSlug": "posthog",
+      "category": "analytics",
+      "justification": "Product analytics for understanding user behavior, session completion rates, feature adoption, and conversion funnel analysis. PostHog's feature flags enable sequential testing of interruption strategies and difficulty calibration without app updates.",
+      "customizations": [
+        "Track events: session_started, session_completed, session_abandoned, feedback_viewed, scenario_selected, subscription_started",
+        "Feature flags for interruption frequency tuning and difficulty algorithm variants",
+        "Funnel analysis: onboarding → first session → feedback view → second session → subscription",
+        "Session replay disabled (privacy-first — no screen recording of speaking sessions)"
+      ]
+    },
+    {
+      "techSlug": "sentry",
+      "category": "analytics",
+      "justification": "Error tracking and crash reporting — non-negotiable for the crash-free architecture commitment. Monitors real-time session stability, WebSocket connection failures, and AI API errors.",
+      "customizations": [
+        "Configure Sentry React Native SDK with Expo plugin",
+        "Custom breadcrumbs for session lifecycle events (start, interruption, end)",
+        "Alert rules for crash-free session rate dropping below 99.5%",
+        "Performance monitoring for AI pipeline latency (Deepgram → GPT-4o → ElevenLabs end-to-end)",
+        "Sensitive data scrubbing: strip all transcript content from error reports"
+      ]
+    },
+    {
+      "techSlug": "expo-updates",
+      "category": "analytics",
+      "justification": "Over-the-air updates for rapid bug fixes and content updates without App Store review cycles. Critical for updating scenario library content, tuning AI prompts, and fixing issues discovered post-launch.",
+      "customizations": [
+        "Configure automatic update checks on app foreground",
+        "Critical updates (crash fixes) force restart; non-critical updates apply on next launch",
+        "Use update channels: production, beta for staged rollouts"
+      ]
+    },
+    {
+      "techSlug": "expo-notifications",
+      "category": "notifications",
+      "justification": "Local and push notifications for session reminders, streak maintenance, subscription renewal warnings (3-day pre-renewal), and new scenario announcements. Local notifications handle the ethical billing renewal reminders without requiring a push notification server.",
+      "customizations": [
+        "Local notification: 3-day pre-renewal subscription reminder triggered by RevenueCat subscription expiration date",
+        "Local notification: daily practice reminder at user-configured time",
+        "Push notification: new scenario library additions (monthly)",
+        "Push notification: weekly progress summary if user opts in",
+        "Notification preferences screen with granular opt-in/opt-out per notification type"
+      ]
+    },
+    {
+      "techSlug": "supabase-realtime",
+      "category": "realtime",
+      "justification": "Used for real-time subscription state sync across the app when webhook events update the database. Also enables potential future features like live coaching sessions. Lightweight integration since Supabase is already the primary backend.",
+      "customizations": [
+        "Subscribe to subscription_status changes on the users table for instant premium tier activation",
+        "Subscribe to scenarios table for real-time scenario library updates",
+        "Minimal usage — most real-time communication happens via direct WebSocket to Deepgram through edge functions"
+      ]
+    }
+  ],
+  "appScreens": [
+    {
+      "screenName": "Welcome & Sign Up",
+      "patternSlug": "signup",
+      "assignedTechSlugs": [
+        "supabase-auth",
+        "expo-auth-session"
+      ],
+      "customNotes": "Clean sign-up screen with Apple Sign-In (prominent, iOS requirement), Google Sign-In, and email/password option. Minimal fields — just email and password. No phone number required. Privacy policy and terms links visible. After sign-up, route to onboarding flow.",
+      "promptOrder": 1
+    },
+    {
+      "screenName": "Login",
+      "patternSlug": "login",
+      "assignedTechSlugs": [
+        "supabase-auth",
+        "expo-auth-session"
+      ],
+      "customNotes": "Login with email/password, Apple Sign-In, and Google Sign-In. Forgot password flow via Supabase Auth magic link. Biometric login (Face ID/Touch ID) after first successful login. Remember me toggle.",
+      "promptOrder": 1
+    },
+    {
+      "screenName": "Speaking Assessment Onboarding",
+      "patternSlug": "onboarding-flow",
+      "assignedTechSlugs": [
+        "supabase-auth",
+        "supabase-postgresql",
+        "drizzle-orm"
+      ],
+      "customNotes": "4-step onboarding: (1) Welcome and value prop — 'Real conversational pressure, not passive recording', (2) Speaking goals selection — interview prep, presentations, debate, general confidence, (3) Self-assessed skill level — beginner/intermediate/advanced, (4) Quick 60-second baseline speaking sample where user speaks on a random prompt. This baseline is stored locally and used to calibrate initial difficulty. No paywall or premium upsell during onboarding.",
+      "promptOrder": 1
+    },
+    {
+      "screenName": "Home Dashboard",
+      "patternSlug": "home-dashboard",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "supabase-auth",
+        "posthog"
+      ],
+      "customNotes": "Primary hub showing: current streak count, sessions this week, overall progress trend (mini chart), quick-start button for recommended next session, recent session cards with scores, and suggested scenario based on user goals. Free tier users see full dashboard — no blurred premium content. Premium scenarios are labeled but not aggressively promoted. Pull-to-refresh syncs latest data from Supabase.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Scenario Library",
+      "patternSlug": "search-browse",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "posthog"
+      ],
+      "customNotes": "Browsable and searchable library of speaking scenarios organized by category (Interview, Pitch, Debate, Presentation, Impromptu, Difficult Conversation). Each scenario card shows: title, category icon, difficulty level (1-5 dots), estimated duration, and free/premium badge. Filter by category, difficulty, and duration. Scenarios cached locally for offline browsing. Premium scenarios show lock icon but are clearly labeled — no dark pattern of letting users start then hitting paywall.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Scenario Detail",
+      "patternSlug": "detail-view",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm"
+      ],
+      "customNotes": "Detailed view of a scenario before starting: full description, what pressure tactics the AI will use (e.g., 'Will interrupt with follow-up questions', 'May challenge your assumptions'), difficulty explanation, estimated duration, and user's past performance on this scenario if attempted before. 'Start Session' button prominently displayed. For premium scenarios, shows upgrade prompt with clear pricing — no trial trap.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Live Pressure Session",
+      "patternSlug": "creation-editor",
+      "assignedTechSlugs": [
+        "deepgram",
+        "openai-gpt4o",
+        "claude-api",
+        "elevenlabs-tts",
+        "assemblyai",
+        "supabase-edge-functions",
+        "sentry"
+      ],
+      "customNotes": "The core experience. Full-screen session view with: (1) Visual audio waveform showing user is being heard, (2) Subtle timer, (3) AI coach avatar/indicator that animates when interrupting, (4) Real-time transcript scrolling at bottom (optional, can be hidden), (5) Pause/End session controls. Audio streams to Deepgram via edge function WebSocket. GPT-4o analyzes transcript chunks and decides when to interrupt based on difficulty level. ElevenLabs generates interruption audio played back immediately. Session state managed locally — if network drops, session continues recording locally and syncs later. Haptic feedback on interruption. No ads, no popups, no distractions during session.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Session Feedback Report",
+      "patternSlug": "detail-view",
+      "assignedTechSlugs": [
+        "openai-whisper",
+        "openai-gpt4o",
+        "supabase-postgresql",
+        "drizzle-orm",
+        "supabase-edge-functions"
+      ],
+      "customNotes": "Post-session feedback screen with: (1) Overall session score with plain-language explanation of how it was calculated, (2) Individual metric cards — Filler Words (count + per-minute rate), Pacing (words per minute with ideal range indicator), Clarity (sentence completion rate), Response Coherence (how well user addressed interruption questions), Confidence Markers (hedging language detection), (3) Comparison to user's own historical average (not arbitrary benchmarks), (4) Transcript with highlighted filler words and interruption moments, (5) AI-generated 2-3 specific improvement tips, (6) 'Practice Again' and 'Try Harder Difficulty' buttons. All scores have 'How is this calculated?' expandable explanations. No black-box ratings.",
+      "promptOrder": 2
+    },
+    {
+      "screenName": "Progress History",
+      "patternSlug": "content-feed",
+      "assignedTechSlugs": [
+        "supabase-postgresql",
+        "drizzle-orm",
+        "supabase-auth",
+        "posthog"
+      ],
+      "customNotes": "Chronological feed of all past sessions with: date, scenario name, overall score, and mini sparkline showing score trend. Tap any session to view full feedback report. Filter by scenario category or date range. Charts at top showing: score trend over time, sessions per week, filler word reduction trend, and pacing improvement. All data benchmarked against user's own history. Export session data as PDF (future feature, deferred).",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "Profile & Stats",
+      "patternSlug": "profile",
+      "assignedTechSlugs": [
+        "supabase-auth",
+        "supabase-postgresql"
+      ],
+      "customNotes": "User profile showing: display name, email, member since date, subscription status (Free/Premium), total sessions completed, total speaking time, current streak, longest streak, and top 3 improved metrics. Edit display name and profile photo. Link to subscription management. No gamification dark patterns — stats are informational, not manipulative.",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "Settings",
+      "patternSlug": "settings",
+      "assignedTechSlugs": [
+        "supabase-auth",
+        "supabase-postgresql",
+        "expo-notifications",
+        "expo-updates"
+      ],
+      "customNotes": "Settings organized in sections: (1) Account — email, password change, delete account, (2) Session Preferences — default difficulty level, show/hide live transcript, haptic feedback toggle, (3) Notifications — practice reminders toggle + time picker, weekly summary toggle, new scenario alerts toggle, renewal reminders (always on, explained why), (4) Data & Privacy — cloud sync toggle, clear local data, download my data, privacy policy, (5) Audio — microphone permissions, audio quality setting (standard/high), (6) About — app version, terms of service, contact support. One-tap subscription cancellation link that opens iOS subscription management directly.",
+      "promptOrder": 1
+    },
+    {
+      "screenName": "Premium Upgrade",
+      "patternSlug": "pricing-paywall",
+      "assignedTechSlugs": [
+        "revenucat",
+        "supabase-auth",
+        "supabase-postgresql",
+        "supabase-realtime"
+      ],
+      "customNotes": "Transparent pricing screen accessible from scenario library (premium scenarios) or profile. Shows: (1) Clear comparison table of Free vs Premium features, (2) Monthly and annual pricing displayed upfront with savings percentage, (3) What you get: advanced scenarios, detailed analytics, unlimited session history, priority AI processing, (4) Explicit statement: 'You will be charged [amount] on [date]. Cancel anytime with one tap.', (5) No free trial that auto-converts — if trial offered, it requires explicit opt-in to paid after trial ends, (6) Cancel/pause options explained before purchase. RevenueCat handles App Store subscription flow. Subscription state synced to Supabase via webhook.",
+      "promptOrder": 3
+    },
+    {
+      "screenName": "Notification Preferences",
+      "patternSlug": "notification-center",
+      "assignedTechSlugs": [
+        "expo-notifications",
+        "supabase-postgresql",
+        "supabase-auth"
+      ],
+      "customNotes": "Dedicated notification management screen (also accessible from Settings). Shows all notification types with toggles: daily practice reminder (with time picker), weekly progress summary, new scenario alerts, subscription renewal reminder (always on with explanation). Preview of what each notification looks like. Respects iOS notification permissions — if system notifications disabled, shows prompt to enable in iOS Settings.",
+      "promptOrder": 3
+    }
+  ],
+  "synergyNotes": [
+    {
+      "techSlugA": "deepgram",
+      "techSlugB": "supabase-edge-functions",
+      "note": "Deepgram WebSocket streaming is proxied through Supabase Edge Functions to keep API keys server-side. The edge function maintains the WebSocket connection to Deepgram and relays transcript chunks to the mobile client. This adds ~50ms latency but is essential for security. Edge function also handles the interruption decision logic — when transcript analysis triggers an interruption, it calls GPT-4o and returns the interruption text in the same response stream."
+    },
+    {
+      "techSlugA": "openai-gpt4o",
+      "techSlugB": "elevenlabs-tts",
+      "note": "GPT-4o generates interruption text which is immediately passed to ElevenLabs TTS for voice synthesis. To minimize latency, pre-generated common interruption phrases (200+) are bundled as static audio assets in the app binary. Only novel, context-specific interruptions require real-time TTS generation. The edge function decides whether to use a cached phrase or generate new TTS."
+    },
+    {
+      "techSlugA": "openai-gpt4o",
+      "techSlugB": "claude-api",
+      "note": "Claude API serves as automatic fallback when GPT-4o returns 429 (rate limit) or 500 errors. Both APIs use identical system prompts and structured JSON output formats so the client code handles responses identically regardless of which model generated them. Failover is handled in the edge function layer, transparent to the mobile client."
+    },
+    {
+      "techSlugA": "deepgram",
+      "techSlugB": "assemblyai",
+      "note": "AssemblyAI is the fallback streaming transcription provider if Deepgram WebSocket connection fails. The edge function normalizes both providers' output into an identical transcript chunk format so downstream interruption logic works without modification. Failover triggers automatically after 3 consecutive Deepgram connection failures."
+    },
+    {
+      "techSlugA": "supabase-postgresql",
+      "techSlugB": "drizzle-orm",
+      "note": "Drizzle ORM is used for the local Expo SQLite database (on-device), NOT for Supabase PostgreSQL (which uses Supabase client SDK directly). Local SQLite stores cached sessions, feedback, and scenario metadata for offline access. A sync service reconciles local and cloud data when connectivity is restored. Schema designs are intentionally similar to minimize mapping complexity."
+    },
+    {
+      "techSlugA": "revenucat",
+      "techSlugB": "supabase-edge-functions",
+      "note": "RevenueCat sends webhook events (subscription created, renewed, cancelled, expired) to a Supabase Edge Function endpoint. The edge function updates the user's subscription_status and tier in the Supabase PostgreSQL users table. This ensures subscription state is always server-authoritative and can't be spoofed client-side."
+    },
+    {
+      "techSlugA": "revenucat",
+      "techSlugB": "expo-notifications",
+      "note": "When RevenueCat subscription info is fetched on app launch, the app calculates the renewal date and schedules a local notification 3 days before renewal. This implements the ethical billing commitment — users are always warned before charges. Local notifications don't require a push notification server."
+    },
+    {
+      "techSlugA": "posthog",
+      "techSlugB": "expo-updates",
+      "note": "PostHog feature flags are checked on app launch after Expo Updates applies any OTA updates. This allows remote configuration of interruption frequency, difficulty calibration parameters, and UI experiments without requiring new app builds or App Store review."
+    },
+    {
+      "techSlugA": "sentry",
+      "techSlugB": "deepgram",
+      "note": "Sentry captures WebSocket connection failures, transcription timeouts, and streaming errors from the Deepgram pipeline with custom breadcrumbs tracking session lifecycle. Alert rules trigger if real-time transcription error rate exceeds 2% of sessions, enabling rapid response to Deepgram service degradation."
+    },
+    {
+      "techSlugA": "supabase-auth",
+      "techSlugB": "expo-auth-session",
+      "note": "Expo AuthSession handles the native OAuth flows (Apple Sign-In, Google Sign-In) on iOS and passes the resulting tokens to Supabase Auth's signInWithIdToken method. Supabase Auth then creates/links the user account and issues a Supabase session JWT. This two-layer approach is required because Supabase Auth can't directly trigger native iOS OAuth prompts."
+    }
+  ],
+  "promptPlan": {
+    "prompt1Screens": [
+      "Welcome & Sign Up",
+      "Login",
+      "Speaking Assessment Onboarding",
+      "Settings"
+    ],
+    "prompt1Focus": "Set up Expo project with TypeScript, configure Supabase (auth, PostgreSQL, edge functions), implement authentication flows (email/password, Apple Sign-In, Google Sign-In via Expo AuthSession), build tab navigation structure, create local SQLite database with Drizzle ORM, implement onboarding flow with speaking goals selection and skill level assessment (defer baseline recording to Prompt 2), build settings screen with all preference sections, configure Sentry error tracking, and set up PostHog analytics initialization. Establish the data models in Supabase PostgreSQL (users, sessions, session_feedback, scenarios, user_progress, subscriptions tables with RLS policies). Seed the scenario library with 10 initial scenarios across categories.",
+    "prompt2Screens": [
+      "Home Dashboard",
+      "Scenario Library",
+      "Scenario Detail",
+      "Live Pressure Session",
+      "Session Feedback Report"
+    ],
+    "prompt2Focus": "Build the core AI-powered speaking experience. Implement the Home Dashboard with progress overview, streak tracking, and quick-start session flow. Build the Scenario Library with search, filtering, and offline caching. Create the Scenario Detail view with past performance display. Build the Live Pressure Session screen — the critical path: audio capture via Expo AV, WebSocket streaming to Deepgram via Supabase Edge Function, real-time transcript display, GPT-4o interruption generation pipeline, ElevenLabs TTS playback for AI interruptions, session state management with pause/resume/end, and offline fallback (local recording continues if network drops). Build the Session Feedback Report with Whisper post-processing, GPT-4o feedback generation with transparent scoring, historical comparison charts, and filler word highlighting in transcript. Complete the onboarding baseline recording from Prompt 1. This is the highest-risk prompt — focus on getting the real-time AI pipeline working reliably with proper error handling and Sentry monitoring.",
+    "prompt3Screens": [
+      "Progress History",
+      "Profile & Stats",
+      "Premium Upgrade",
+      "Notification Preferences"
+    ],
+    "prompt3Focus": "Build the Progress History feed with session cards, score trend charts, and filtering. Create the Profile & Stats screen with lifetime statistics and subscription status display. Implement the Premium Upgrade screen with RevenueCat integration — transparent pricing display, subscription purchase flow, one-tap cancellation link to iOS subscription management, and webhook integration with Supabase Edge Function for server-side subscription state sync. Build the Notification Preferences screen and implement local notifications for practice reminders and 3-day pre-renewal warnings. Configure Expo Updates for OTA update capability. Set up EAS Build profiles for TestFlight and production. Final polish: loading states, empty states, error states for all screens, haptic feedback on interruptions, accessibility labels, and App Store submission preparation. Performance optimization pass on the Live Pressure Session screen."
+  }
+}

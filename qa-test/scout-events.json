@@ -1,0 +1,6 @@
+[
+  {
+    "type": "error",
+    "message": "Failed query: insert into \"scans\" (\"id\", \"store\", \"category\", \"status\", \"total_apps_scraped\", \"total_opportunities\", \"created_at\", \"completed_at\", \"mode\", \"idea_text\", \"focus_text\", \"discovery_angle\", \"master_idea_json\", \"blue_ocean_json\") values ($1, $2, $3, $4, $5, $6, $7, default, $8, $9, default, default, default, default)\nparams: 88a60fb5-94f0-4dc6-b0b1-5a7e9c769b7f,app_store,synthesis,running,0,0,2026-03-08T14:58:42.909Z,synthesis,Cognitize — a speech coaching app that helps users improve their speaking by interrupting them, applying pressure questions, and simulating real conversational pressure"
+  }
+]

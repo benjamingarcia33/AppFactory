@@ -3,14 +3,22 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { OpportunityGrid } from "./opportunity-grid";
 import { OpportunityDetailModal } from "./opportunity-detail-modal";
+import { MasterIdeaCard } from "./master-idea-card";
+import { BlueOceanCard } from "./blue-ocean-card";
+import { ScoutExecutiveSummary } from "./scout-executive-summary";
 import { getOpportunitiesByScan } from "@/actions/scout-actions";
 import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import { STATUS_COLORS } from "@/lib/ui-constants";
 import type { Scan, Opportunity } from "@/lib/types";
 import {
   GOOGLE_PLAY_CATEGORIES,
@@ -28,12 +36,12 @@ interface ScanSessionCardProps {
 
 const statusConfig: Record<
   Scan["status"],
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+  { label: string }
 > = {
-  running: { label: "Running", variant: "default" },
-  completed: { label: "Completed", variant: "secondary" },
-  failed: { label: "Failed", variant: "destructive" },
-  cancelled: { label: "Cancelled", variant: "outline" },
+  running: { label: "Running" },
+  completed: { label: "Completed" },
+  failed: { label: "Failed" },
+  cancelled: { label: "Cancelled" },
 };
 
 function getCategoryLabel(store: string, categoryValue: string): string {
@@ -91,11 +99,11 @@ export function ScanSessionCard({
 
   return (
     <Card
-      className={
+      className={`rounded-xl border bg-surface-0 ${
         isActive
-          ? "border-primary/50 shadow-md ring-1 ring-primary/20"
-          : ""
-      }
+          ? "border-primary/30 shadow-lg shadow-primary/5"
+          : "border-border"
+      }`}
     >
       <CardHeader className="pb-0">
         <button
@@ -109,12 +117,40 @@ export function ScanSessionCard({
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             )}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <Badge variant="outline" className="text-[10px] shrink-0">
+              <Badge variant="outline" className="text-[11px] shrink-0">
                 {scan.store === "google_play" ? "Google Play" : "App Store"}
               </Badge>
-              {scan.mode === "idea" ? (
+              {scan.mode === "discovery" ? (
                 <>
-                  <Badge variant="secondary" className="text-[10px] shrink-0">
+                  <Badge variant="secondary" className="text-[11px] shrink-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                    Discovery
+                  </Badge>
+                  <span className="text-sm font-medium truncate">
+                    {scan.masterIdea?.name ??
+                      (scan.focusText
+                        ? `${getCategoryLabel(scan.store, scan.category)}: ${scan.focusText}`
+                        : scan.discoveryAngle
+                          ? `${getCategoryLabel(scan.store, scan.category)}: ${scan.discoveryAngle.length > 50 ? scan.discoveryAngle.slice(0, 50) + "..." : scan.discoveryAngle}`
+                          : `${getCategoryLabel(scan.store, scan.category)} Discovery`)}
+                  </span>
+                </>
+              ) : scan.mode === "synthesis" ? (
+                <>
+                  <Badge variant="secondary" className="text-[11px] shrink-0 bg-primary/10 text-primary border-primary/20">
+                    Synthesis
+                  </Badge>
+                  <span className="text-sm font-medium truncate">
+                    {scan.masterIdea?.name ??
+                      (scan.ideaText
+                        ? scan.ideaText.length > 60
+                          ? scan.ideaText.slice(0, 60) + "..."
+                          : scan.ideaText
+                        : "Synthesis Scan")}
+                  </span>
+                </>
+              ) : scan.mode === "idea" ? (
+                <>
+                  <Badge variant="secondary" className="text-[11px] shrink-0">
                     Idea
                   </Badge>
                   <span className="text-sm font-medium truncate">
@@ -142,7 +178,7 @@ export function ScanSessionCard({
             <span className="text-xs text-muted-foreground">
               {scan.totalOpportunities} opps
             </span>
-            <Badge variant={config.variant} className="text-[10px]">
+            <Badge variant="outline" className={`text-[11px] ${STATUS_COLORS[scan.status] ?? ""}`}>
               {config.label}
             </Badge>
             <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -153,31 +189,55 @@ export function ScanSessionCard({
       </CardHeader>
 
       {expanded && (
-        <CardContent className="pt-3">
+        <CardContent className="pt-3 space-y-4">
+          {/* Master Idea for past synthesis scans */}
+          {!isActive && scan.masterIdea && (
+            <>
+              <ScoutExecutiveSummary masterIdea={scan.masterIdea} scanId={scan.id} />
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-sm text-muted-foreground hover:text-foreground transition-colors group">
+                  <span>View Full Analysis</span>
+                  <ChevronDown className="h-4 w-4 transition-transform group-data-[state=closed]:-rotate-90" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <MasterIdeaCard
+                    masterIdea={scan.masterIdea}
+                    scanId={scan.id}
+                    opportunities={opportunities ?? []}
+                    hideExecutiveSummary
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            </>
+          )}
+
+          {/* Blue Ocean for past scans */}
+          {!isActive && scan.blueOcean && (
+            <BlueOceanCard blueOcean={scan.blueOcean} scanId={scan.id} />
+          )}
+
           {loading ? (
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Loading opportunities...
             </div>
           ) : displayOpps.length > 0 ? (
-            <>
-              <OpportunityGrid
-                opportunities={displayOpps}
-                onSelect={(opp) => {
-                  setSelectedOpportunity(opp);
-                  setModalOpen(true);
-                }}
-              />
-              <OpportunityDetailModal
-                opportunity={selectedOpportunity}
-                allOpportunities={displayOpps}
-                open={modalOpen}
-                onOpenChange={(open) => {
-                  setModalOpen(open);
-                  if (!open) setSelectedOpportunity(null);
-                }}
-              />
-            </>
+            <Collapsible defaultOpen>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-sm font-medium hover:text-primary transition-colors group">
+                <span>{displayOpps.length} competitors analyzed</span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                <OpportunityGrid
+                  opportunities={displayOpps}
+                  onSelect={(opp) => {
+                    setSelectedOpportunity(opp);
+                    setModalOpen(true);
+                  }}
+                  label={scan.mode === "synthesis" || scan.mode === "discovery" ? "competitors analyzed" : undefined}
+                />
+              </CollapsibleContent>
+            </Collapsible>
           ) : (
             <p className="text-sm text-muted-foreground py-4 text-center">
               {isActive
@@ -185,6 +245,17 @@ export function ScanSessionCard({
                 : "No opportunities found in this scan."}
             </p>
           )}
+
+          {/* Modal for viewing opportunity details */}
+          <OpportunityDetailModal
+            opportunity={selectedOpportunity}
+            allOpportunities={displayOpps}
+            open={modalOpen}
+            onOpenChange={(open) => {
+              setModalOpen(open);
+              if (!open) setSelectedOpportunity(null);
+            }}
+          />
         </CardContent>
       )}
     </Card>

@@ -6,33 +6,42 @@ import type { TimelinePhase } from "@/lib/types";
 
 interface TimelineVisualProps {
   timeline: TimelinePhase[];
+  hideTitle?: boolean;
 }
 
-export function TimelineVisual({ timeline }: TimelineVisualProps) {
+export function TimelineVisual({ timeline, hideTitle }: TimelineVisualProps) {
+  if (!timeline || timeline.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground py-4 text-center">
+        Timeline data not available.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold">Development Timeline</h3>
+      {!hideTitle && <h3 className="text-lg font-semibold">Development Timeline</h3>}
       <div className="flex gap-0 overflow-x-auto pb-2">
         {timeline.map((phase, i) => (
           <div key={i} className="flex items-start shrink-0">
-            <Card className="min-w-[240px] max-w-[280px]">
+            <Card className="min-w-[240px] max-w-[280px] bg-surface-0 border border-border rounded-xl">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-[11px]">
                     Phase {i + 1}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">{phase.duration}</span>
+                  <span className="text-xs text-muted-foreground">{phase?.duration ?? "N/A"}</span>
                 </div>
-                <CardTitle className="text-sm mt-1">{phase.phase}</CardTitle>
+                <CardTitle className="text-sm mt-1">{phase?.phase ?? "Unknown Phase"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-xs font-medium mb-1">Milestones</p>
                   <ul className="space-y-0.5">
-                    {phase.milestones.map((m, j) => (
+                    {(phase?.milestones ?? []).map((m, j) => (
                       <li key={j} className="text-xs text-muted-foreground flex gap-1.5">
                         <span className="shrink-0">&#8226;</span>
-                        {m}
+                        {m ?? ""}
                       </li>
                     ))}
                   </ul>
@@ -40,9 +49,9 @@ export function TimelineVisual({ timeline }: TimelineVisualProps) {
                 <div>
                   <p className="text-xs font-medium mb-1">Deliverables</p>
                   <div className="flex flex-wrap gap-1">
-                    {phase.keyDeliverables.map((d, j) => (
-                      <Badge key={j} variant="secondary" className="text-[10px]">
-                        {d}
+                    {(phase?.keyDeliverables ?? []).map((d, j) => (
+                      <Badge key={j} variant="secondary" className="text-[11px]">
+                        {d ?? ""}
                       </Badge>
                     ))}
                   </div>

@@ -1,0 +1,223 @@
+{
+  "coreExpectations": [
+    {
+      "capability": "Interactive Pressure Simulation",
+      "description": "Users expect an AI that actively interrupts, challenges, and stress-tests them mid-speech — not a passive recorder. Competitors like Credible and Orai only record and play back, leaving users without the live adversarial dynamic that mirrors real interviews, pitches, and debates. Users want to feel genuinely challenged, not just observed.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Accurate and Explainable AI Feedback",
+      "description": "Users expect feedback that is granular, honest, and transparent in how scores are derived. Vocal Image's fake-review scandal and black-box ratings destroyed trust. Users want to know exactly why they scored a certain way — filler word counts, pacing metrics, coherence scores — benchmarked against their own history, not opaque standards.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Generous and Functional Free Tier",
+      "description": "Across Credible (pay before you see anything), Babbel (one lesson free), and LangLearn (deceptive trial), users have been burned by paywalls that block evaluation. Users expect to meaningfully experience core pressure simulation and feedback before spending money. A free tier that actually works is now a baseline expectation, not a differentiator.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Ethical and Transparent Billing",
+      "description": "Unauthorized charges (Vocal Image, LangLearn, EWA), inability to cancel (Vocal Image), and hidden renewal charges (memoryOS, Gibson) have made users deeply suspicious. Users expect one-tap cancellation, upfront pricing, renewal reminders, and zero hidden charges as non-negotiable table stakes.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Reliable App Performance with No Crashes",
+      "description": "Otsimo's repeated login crashes and Credible's broken training/help buttons show that instability destroys trust instantly. Users expect the app to work every single time — especially during a live pressure session where a crash mid-speech is unacceptable. Offline capability for core features is expected.",
+      "importance": "critical"
+    },
+    {
+      "capability": "Real-World Scenario Variety",
+      "description": "Users expect a library of contextually relevant scenarios — job interviews, investor pitches, classroom presentations, hostile Q&A — not generic or repetitive exercises. Otsimo's limited and repetitive content and Babbel's gated practice opportunities show that scenario fatigue is a real churn driver. Monthly new content is expected by engaged users.",
+      "importance": "high"
+    },
+    {
+      "capability": "Non-Punitive Progress Tracking",
+      "description": "IXL's catastrophic progress reset (99% to 78% for one wrong answer) and Babbel's streak-rushing mechanic have conditioned users to expect fair, encouraging progression. Users want streaks for showing up, not perfection, and error patterns surfaced as coaching data rather than punishments.",
+      "importance": "high"
+    },
+    {
+      "capability": "Privacy-First Audio Handling",
+      "description": "Credible's practice of locking personal audio recordings behind a paywall raised serious security concerns among users. Users expect on-device processing for core features, opt-in cloud sync, clear data retention policies, and easy deletion — especially given the sensitive nature of recorded speech.",
+      "importance": "high"
+    }
+  ],
+  "aiEnhancements": [
+    {
+      "painPoint": "Passive recording tools that never simulate real pressure (Credible, Orai)",
+      "aiSolution": "A real-time conversational AI engine that interrupts mid-sentence, fires pointed follow-up questions, and introduces unexpected topic pivots — calibrated by difficulty level so the pressure is always appropriate to the user's current skill stage.",
+      "expectedImpact": "Users build genuine reflexes and composure under pressure rather than just reviewing recordings. This is the single largest differentiation gap in the market and directly addresses the core unmet need across all 11 competitors."
+    },
+    {
+      "painPoint": "Inaccurate and black-box AI feedback destroying trust (Vocal Image, Credible)",
+      "aiSolution": "Transparent scoring AI that provides plain-language explanations for every metric — filler word frequency, pacing variance, response coherence, confidence markers — with session-over-session benchmarking against the user's own baseline rather than arbitrary population standards.",
+      "expectedImpact": "Users trust the feedback loop, stay engaged longer, and can act on specific, credible insights rather than dismissing scores as meaningless. Eliminates the primary reason users leave speech coaching apps after one session."
+    },
+    {
+      "painPoint": "Deceptive billing and subscription traps (Vocal Image, LangLearn, memoryOS, EWA)",
+      "aiSolution": "AI-assisted subscription management that proactively surfaces renewal reminders 3 days in advance, detects unusual billing patterns, and enables one-tap pause or cancellation — with no dark patterns in the payment flow.",
+      "expectedImpact": "Dramatically reduces negative reviews related to billing fraud, builds long-term trust, and lowers churn by replacing fear-based retention with value-based retention."
+    },
+    {
+      "painPoint": "Repetitive and limited exercise content causing fatigue (Otsimo, Babbel)",
+      "aiSolution": "Generative AI scenario engine that dynamically creates new speaking contexts, adversarial question sets, and topic pivots based on the user's industry, skill level, and past session weaknesses — ensuring no two sessions feel identical.",
+      "expectedImpact": "Eliminates content fatigue as a churn driver, keeps advanced users genuinely challenged, and reduces the need for a massive manually curated scenario library at launch."
+    },
+    {
+      "painPoint": "Unfair and punitive progress systems discouraging continued use (IXL, Babbel)",
+      "aiSolution": "AI-driven adaptive difficulty that analyzes error patterns across sessions to identify specific weaknesses — hesitation under follow-up questions, filler word spikes under topic pivots — and routes users toward targeted micro-drills rather than resetting overall progress.",
+      "expectedImpact": "Users stay motivated through visible, credible improvement curves. Mistakes become coaching signals rather than punishments, directly countering the IXL-style frustration that drives 1-star reviews."
+    },
+    {
+      "painPoint": "Poor audio detection accuracy undermining feedback credibility (Credible, Gibson)",
+      "aiSolution": "On-device speech processing using local ML models for core detection — filler words, pacing, volume — that functions reliably without network dependency, with cloud-enhanced analysis available opt-in for deeper coherence and sentiment scoring.",
+      "expectedImpact": "Eliminates the credibility-destroying experience of feedback based on misdetected speech. Offline reliability removes a major barrier for users in low-connectivity environments like commutes or travel."
+    },
+    {
+      "painPoint": "Safety and privacy concerns with audio data (Credible)",
+      "aiSolution": "On-device audio processing as the default architecture for all core feedback features, with explicit opt-in consent flows for any cloud upload, granular data retention controls, and one-tap audio deletion — all surfaced transparently in the main settings, not buried in a privacy policy.",
+      "expectedImpact": "Removes a documented trust barrier that caused Credible users to leave negative reviews specifically about audio privacy. Positions Cognitize as the only speech coaching app users can trust with sensitive professional content."
+    }
+  ],
+  "featurePriorities": [
+    {
+      "feature": "Pressure Simulation Engine with Real-Time Interruption",
+      "impact": "critical",
+      "feasibility": "medium",
+      "aiIntegration": "Core conversational AI that monitors speech in real time, identifies natural pause points and topic transitions, and injects interruptions, follow-up challenges, and topic pivots at calibrated difficulty levels. Requires low-latency on-device speech recognition feeding into a fast LLM response layer."
+    },
+    {
+      "feature": "Transparent Granular Feedback with Explainable Scoring",
+      "impact": "critical",
+      "feasibility": "high",
+      "aiIntegration": "Post-session AI analysis pipeline scoring filler words, pacing, coherence, and confidence markers with plain-language explanations for each metric. Session-over-session delta tracking benchmarks users against their own history, not population averages. Scoring logic is surfaced in-app, not hidden."
+    },
+    {
+      "feature": "Ethical Billing with One-Tap Cancellation and Renewal Alerts",
+      "impact": "critical",
+      "feasibility": "high",
+      "aiIntegration": "Automated renewal reminder system triggered 3 days before billing, in-app subscription management with pause option, and proactive anomaly detection for billing errors. No AI complexity required — high feasibility, critical trust impact given competitor billing scandals."
+    },
+    {
+      "feature": "Generous Free Tier with Core Pressure Simulation Accessible",
+      "impact": "critical",
+      "feasibility": "high",
+      "aiIntegration": "Free tier gates only advanced scenarios and deep analytics behind premium. Core pressure simulation, basic feedback, and progress tracking are fully free. AI cost management via on-device processing for free-tier users reduces server costs that typically force competitors into aggressive paywalls."
+    },
+    {
+      "feature": "On-Device Audio Processing for Privacy and Reliability",
+      "impact": "high",
+      "feasibility": "medium",
+      "aiIntegration": "Local ML models handle filler word detection, pacing analysis, and volume monitoring without network dependency. Cloud AI layer is opt-in for advanced coherence and sentiment analysis. Directly addresses Credible's privacy complaints and eliminates crash-on-poor-network failure modes."
+    },
+    {
+      "feature": "Real-World Scenario Library with Progressive Unlocking",
+      "impact": "high",
+      "feasibility": "high",
+      "aiIntegration": "Curated scenario library augmented by generative AI that dynamically varies question sets, adversarial tactics, and topic pivots within each scenario type. Skill-gated unlocking prevents beginner overwhelm. Monthly AI-generated scenario additions reduce manual content production burden."
+    },
+    {
+      "feature": "Adaptive Difficulty and Non-Punitive Progress Tracking",
+      "impact": "high",
+      "feasibility": "high",
+      "aiIntegration": "AI error pattern analysis identifies specific weakness clusters — topic pivot hesitation, filler spikes under pressure — and routes users to targeted micro-drills. Streak system rewards session consistency, not perfection. Progress is never reset; mistakes are logged as coaching data points."
+    },
+    {
+      "feature": "Offline-Capable Stable Core Architecture",
+      "impact": "high",
+      "feasibility": "medium",
+      "aiIntegration": "On-device speech processing enables core session functionality without network. Local session storage with optional cloud sync. Crash-free architecture validated through staged rollout testing. Addresses Otsimo's repeated login crashes and Credible's broken feature buttons directly."
+    },
+    {
+      "feature": "Advanced Scenario Unlocks for Premium Tier",
+      "impact": "medium",
+      "feasibility": "high",
+      "aiIntegration": "Premium AI scenarios include investor pitch hostile Q&A, debate round simulation, and media interview pressure — each with specialized adversarial AI personas calibrated to the scenario context. Deep analytics dashboard with session comparison, weakness heatmaps, and improvement velocity tracking."
+    },
+    {
+      "feature": "Privacy Controls and Audio Data Management Dashboard",
+      "impact": "medium",
+      "feasibility": "high",
+      "aiIntegration": "In-app data management UI showing exactly what audio is stored, where, and for how long. One-tap deletion, granular retention settings, and explicit opt-in for any cloud processing. No AI complexity required but directly addresses Credible's documented privacy trust failure."
+    }
+  ],
+  "uxVision": {
+    "overallExperience": "Cognitize should feel like having a brilliant, demanding coach in your pocket who respects your time, your money, and your privacy — and who actually makes you better. Every interaction should communicate competence and honesty: the AI challenges you because it believes you can handle it, the feedback is direct because you deserve the truth, and the billing is transparent because you are a professional, not a target. The experience should feel like a high-stakes sparring session with a trusted mentor, not a gamified lesson or a passive recording studio.",
+    "keyDifferences": [
+      "Where Credible locks you out before you see anything, Cognitize lets you feel the pressure simulation in the first 60 seconds of onboarding — no paywall, no friction, immediate value delivery",
+      "Where Vocal Image gives you black-box scores and fake reviews, Cognitize shows you exactly how every metric is calculated and benchmarks you only against your own past performance",
+      "Where IXL resets your progress for a single mistake and Babbel rewards rushing through streaks, Cognitize treats every error as a coaching signal and rewards showing up consistently over performing perfectly",
+      "Where Otsimo crashes mid-session and forces repeated logins, Cognitize runs core features on-device so a poor network connection never interrupts a live pressure session",
+      "Where memoryOS and LangLearn hide renewal charges until it is too late, Cognitize sends a 3-day renewal reminder and makes cancellation a single tap from the home screen",
+      "Where all 11 competitors offer passive or structured learning, Cognitize is the only app that actively fights back — interrupting you, questioning you, and refusing to let you coast through a rehearsed answer"
+    ],
+    "emotionalTone": "Demanding but fair. Challenging but trustworthy. The emotional register should be that of a respected coach who pushes you hard because they believe in your potential — not a gamified app trying to extract subscription revenue. Users should feel a productive tension during sessions and genuine pride after them. The app should never feel punishing, manipulative, or condescending. After each session, users should feel they earned something real."
+  },
+  "unmetNeeds": [
+    {
+      "need": "Personalized Adversarial Persona Calibration",
+      "description": "No competitor offers the ability to configure the AI's interruption style, aggression level, or questioning approach to match a specific real-world context — a skeptical VC, a hostile journalist, a fast-paced debate moderator. Users preparing for specific high-stakes events need an AI that can mirror the specific pressure dynamics of that context, not a generic difficulty slider."
+    },
+    {
+      "need": "Post-Session Weakness Pattern Recognition Across Multiple Sessions",
+      "description": "All competitors treat each session as isolated. Users have a latent need for longitudinal AI analysis that identifies recurring weakness patterns — always hesitating on follow-up questions about financials, always using filler words when pivoting topics — and proactively designs future sessions to target those specific failure modes."
+    },
+    {
+      "need": "Real-Time Confidence Calibration Feedback During Sessions",
+      "description": "Users preparing for high-stakes situations need in-session signals — not just post-session reports — that help them recognize when their pacing is collapsing or filler words are spiking under pressure. A subtle real-time indicator during sessions could help users self-correct in the moment, building the metacognitive awareness that transfers to real-world performance."
+    },
+    {
+      "need": "Peer Comparison and Community Benchmarking Without Social Pressure",
+      "description": "Users want to know how they compare to others at similar skill levels and in similar professional contexts — not to compete, but to calibrate their own progress realistically. No competitor offers anonymous cohort benchmarking that answers the question: am I improving faster or slower than other professionals preparing for investor pitches?"
+    },
+    {
+      "need": "Pre-Event Rapid Calibration Mode",
+      "description": "Users facing an imminent high-stakes event — a pitch in two hours, an interview tomorrow morning — need a compressed, high-intensity session format that rapidly surfaces their current weak points and delivers targeted micro-drills in under 15 minutes. No competitor offers an event-aware rapid preparation mode that adapts to time constraints."
+    },
+    {
+      "need": "Emotional Regulation Coaching Integrated with Speaking Practice",
+      "description": "Public Speaking with AJ's relaxation-technique approach shows latent demand for anxiety management integrated with speaking practice. Users don't just need to speak better — they need to manage the physiological stress response that degrades performance under real pressure. An AI that detects vocal stress markers and offers in-session breathing or pacing cues addresses a need no purely technical speech coach currently meets."
+    }
+  ],
+  "antiPatterns": [
+    {
+      "pattern": "Paywall before any meaningful feature experience",
+      "type": "avoid",
+      "reasoning": "Credible's $99-per-year wall appearing before users could access a single conversation or report generated multiple 1-star reviews explicitly citing the paywall as the reason for uninstalling. Babbel's single-free-lesson model drew direct comparisons to Duolingo as a reason to leave. Users in 2024 expect to evaluate core value before committing financially. Any paywall that appears before the first completed pressure session will replicate this exact failure pattern."
+    },
+    {
+      "pattern": "Black-box AI scoring with no explanation",
+      "type": "avoid",
+      "reasoning": "Vocal Image's unexplained scores combined with its fake review scandal created a complete trust collapse. Users who cannot understand why they received a score cannot act on it, cannot trust it, and will not pay for more of it. Explainable AI is not a nice-to-have in a coaching context — it is the product."
+    },
+    {
+      "pattern": "Hidden subscription charges and no renewal reminders",
+      "type": "avoid",
+      "reasoning": "memoryOS charged users $149 without warning after a $6 introductory offer. EWA charged users who cancelled within the trial period. LangLearn billed users who were told the app was free. These patterns generated the most visceral 1-star reviews across all 11 competitors and are the fastest path to App Store removal and refund disputes. Cognitize must treat billing transparency as a core product feature, not a legal compliance checkbox."
+    },
+    {
+      "pattern": "Progress reset as a penalty mechanic",
+      "type": "avoid",
+      "reasoning": "IXL's scoring system — dropping from 99% to 78% for a single wrong answer — generated some of the most emotionally charged negative reviews in the entire competitor set. In a speech coaching context where users are already anxious about performance, punitive progress mechanics will cause immediate abandonment. Mistakes must be reframed as data, never as failures."
+    },
+    {
+      "pattern": "Transparent and upfront pricing displayed before trial begins",
+      "type": "preserve",
+      "reasoning": "The absence of this pattern across nearly every competitor is the single most consistent source of 1-star reviews. The positive inverse — showing pricing clearly before any commitment — is so rare in this market that it functions as a genuine differentiator. Cognitize should display all pricing tiers on the onboarding screen before asking for any account creation, making transparency a visible brand statement."
+    },
+    {
+      "pattern": "On-device processing for core features enabling offline reliability",
+      "type": "preserve",
+      "reasoning": "Otsimo's crash-on-exercise-start and Credible's broken training buttons show that network-dependent features in a live coaching session context are unacceptable. The positive pattern of local processing — seen partially in Gibson's note detection architecture — should be preserved and extended. Users in transit, in low-connectivity environments, or simply unwilling to trust cloud audio processing need a core experience that works without a network connection."
+    },
+    {
+      "pattern": "Calibrated progressive difficulty that respects beginner anxiety",
+      "type": "preserve",
+      "reasoning": "Public Speaking with AJ's calm, anxiety-aware approach generated genuine positive outcomes for users who found other apps overwhelming. The emotional intelligence of meeting users where they are — not throwing advanced pressure simulation at someone who has never practiced public speaking — is a pattern worth preserving and building on. Cognitize's difficulty calibration should feel like a coach reading the room, not an algorithm ignoring user state."
+    },
+    {
+      "pattern": "Aggressive upsell prompts within active sessions",
+      "type": "avoid",
+      "reasoning": "Gibson's mid-lesson upsell to a $4.99 charge after a $19.99 premium subscription generated immediate 1-star reviews about feeling deceived. In Cognitize's context, interrupting a live pressure simulation session with a monetization prompt would be a catastrophic UX failure that directly contradicts the product's core promise of authentic, uninterrupted pressure practice. All monetization prompts must be confined to session end screens and dedicated settings flows."
+    }
+  ]
+}
